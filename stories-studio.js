@@ -256,7 +256,12 @@ function paintResults(){
    showApplePreview();return;
  }
  var list=S.results||[];
- if(!list.length){renderSearchMessage(S.catalog==='library'?'No hay canciones en tu biblioteca. Puedes subir las tuyas abajo.':S.catalog==='popular'?'No se encontró la canción en Apple Music. Prueba otro artista.':S.catalog==='openverse'?'No hay resultados con CC0, dominio público o CC BY. Prueba un género o utiliza un audio propio.':'No encontramos pistas disponibles en Audius. Prueba otro nombre.');showApplePreview();return}
+ if(!list.length){
+  renderSearchMessage(S.catalog==='library'?'No hay canciones guardadas todavía. Puedes subir las tuyas abajo.':S.catalog==='popular'?'No se encontró la grabación en Apple Music; aun así puedes preparar una solicitud de licencia.':S.catalog==='openverse'?'No hay una versión libre de esta canción en Openverse. Si buscas un éxito comercial, consulta «Éxitos y licencias».':'No hay pistas con ese nombre en Audius.');
+  if(S.catalog==='popular'&&q.length>=2)box.insertAdjacentHTML('beforeend','<button type="button" class="studio-action secondary" data-license-query="1">Solicitar permiso para «'+fns.esc(q)+'»</button>');
+  if(S.catalog==='openverse'&&q.length>=2)box.insertAdjacentHTML('beforeend','<button type="button" class="studio-action secondary" id="studio-search-hits">Buscar el éxito en el catálogo comercial</button>');
+  showApplePreview();return;
+ }
  if(S.catalog==='popular'){
    box.innerHTML='<div class="studio-section-count"><span>'+list.length+' canciones encontradas</span><span>Reproductor oficial Apple Music</span></div>'
    +list.map(function(t,i){
@@ -518,6 +523,8 @@ function attachEvents(){
   if(t.dataset.findCc!==undefined){var free=S.results[Number(t.dataset.findCc)];if(!free)return;S.searchTerm=free.title;S.searchArtist=free.artist;S.applePreview=null;setSource('openverse');return}
   if(t.dataset.studioSong!==undefined){onSongSelected(Number(t.dataset.studioSong));return}
   if(t.dataset.licenseHit!==undefined){var track=S.results[Number(t.dataset.licenseHit)];if(!track||track.source!=='popular')return;S.licenseTarget=track;updateLicensePanel();var panel=$('#studio-license-panel');if(panel)panel.scrollIntoView({behavior:'smooth',block:'nearest'});return}
+  if(t.dataset.licenseQuery!==undefined){if(!S.searchTerm.trim())return;S.licenseTarget={title:S.searchTerm.trim().slice(0,140),artist:S.searchArtist||'Artista por confirmar',source:'popular'};updateLicensePanel();return}
+  if(t.id==='studio-search-hits'){setSource('popular');return}
   if(t.id==='studio-request-license'){var message=licenseRequestText(S.licenseTarget),area=$('#studio-license-request-text');if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(message).then(function(){setStatus('Solicitud copiada. Envíala al titular de los derechos.')}).catch(function(){if(area){area.focus();area.select()}setStatus('Selecciona el texto y cópialo.')})}else if(area){area.focus();area.select();setStatus('Selecciona el texto y cópialo.')}return}
   if(t.id==='studio-open-feed'){window.open('https://www.feed.fm/clips','_blank','noopener,noreferrer');return}
   if(t.id==='studio-licensed-import'){var track=S.licenseTarget;if(!track)return;var upload=root.querySelector('.studio-uploads');if(upload){upload.open=true;var ti=$('#studio-upload-title'),ar=$('#studio-upload-artist'),basis=$('#studio-rights-basis');if(ti)ti.value=track.title;if(ar)ar.value=track.artist;if(basis)basis.value='commercial_license';upload.scrollIntoView({behavior:'smooth',block:'center'})}return}
