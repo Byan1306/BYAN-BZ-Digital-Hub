@@ -71,7 +71,7 @@ function setPanel(panel){
  if(panel==='filters')html=filtersPanel();
  if(panel==='options')html=optionsPanel();
  $('#studio-panel-body').innerHTML=html||'';
- if(panel==='music'){paintResults();if(S.catalog==='all'&&!S.libraryLoaded){S.libraryLoaded=true;loadLibrary()}else if(S.catalog==='library')loadLibrary();}
+ if(panel==='music'){paintResults();showApplePreview();if(S.catalog==='all'&&!S.libraryLoaded){S.libraryLoaded=true;loadLibrary()}else if(S.catalog==='library')loadLibrary();}
 }
 function photoPanel(){
  return '<div class="studio-panel"><h3>Encuadre de foto</h3><p class="studio-sub">Como en las Stories: elige cómo llenar el marco y arrastra la foto para recolocarla.</p>'
