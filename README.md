@@ -65,3 +65,17 @@ El propietario entra a **Mis Stories → Crear story**. El editor visual ofrece:
 **Almacenamiento:** Base de datos `stories`, biblioteca `music_library` y bucket `byan-stories`. El propietario puede reutilizar audios de su biblioteca sin duplicarlos. Al borrar una story se elimina su foto pero **no** la canción compartida de la biblioteca. Las stories vencidas se ocultan y sus imágenes pueden limpiarse desde «Limpiar vencidas».
 
 **Pruebas:** código y permisos SQL revisados; una publicación real con Audius y archivo musical debe validarse con sesión de propietario en el navegador. Pueden existir restricciones de reproducción automática de audio en ciertos navegadores.
+
+## Buscador musical ampliado (v3)
+
+Se añadió un flujo de búsqueda musical de tres fuentes al editor de Stories:
+
+1. **Música popular** (descubrimiento por catálogo): consulta el buscador público iTunes/Apple Music de Costa Rica, con intento alternativo en EE. UU. cuando no hay coincidencias. Muestra título, artista, carátula, álbum, enlace oficial en Apple Music y búsqueda directa en YouTube. Los resultados de este catálogo **no se pueden poner directamente como banda sonora** porque la API no concede derechos de sincronización.
+2. **Para mi Story**: consulta la API de Audius y ordena hasta 35 resultados por coincidencia de nombre, artista y popularidad. El botón **Buscar versión ▶** de un resultado popular realiza esta búsqueda con el título de la canción. No garantiza que sea la grabación original ni sustituye autorizaciones de titulares de derechos.
+3. **Mis audios**: canciones subidas por el propietario a Supabase, tras confirmar permiso para su publicación; pueden reutilizarse.
+
+Una canción de Apple Music no se reproduce ni se extrae como audio; las vistas previas promocionales tampoco se sincronizan con fotografías. El enlace a YouTube se abre en su sitio, nunca en un reproductor invisible.
+
+**Uso:** abre [BYAN_BZ Digital Hub](https://byan1306.github.io/BYAN-BZ-Digital-Hub/), inicia sesión → **Mis Stories → Crear story → Música**. Prueba un artista famoso en «Música popular», toca «Buscar versión» y, si aparece una pista apropiada en Audius, escúchala y comprueba tus permisos antes de publicarla.
+
+**Notas operativas:** El servicio gratuito de búsquedas puede aplicar límites de peticiones, estar temporalmente caído o devolver un catálogo distinto según la región. El uso de canciones comerciales de terceros en stories requiere un proveedor de música específicamente licenciado. No se ha contratado ningún servicio de pago. El buscador ya fue comprobado mediante revisión de código y sintaxis; la búsqueda en navegador y la reproducción requieren prueba real.
