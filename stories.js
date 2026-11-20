@@ -42,6 +42,7 @@ function stopPlayback(){
  if(audio){audio.pause();audio.src='';audio=null}
 }
 function removeLayer(){
+ if(window.BYAN_STORY_STUDIO)window.BYAN_STORY_STUDIO.cleanup();
  stopPlayback();
  if(photoPreview){URL.revokeObjectURL(photoPreview);photoPreview=null}
  if(layer){layer.remove();layer=null}
@@ -78,26 +79,47 @@ function showStory(i){
  if(i<0){showStory(0);return}
  if(i>=active.length){removeLayer();return}
  stopPlayback();index=i;var s=active[i];
- el('#story-bars').innerHTML=active.map(function(v,j){return '<span class="'+(j<i?'done':j===i?'playing':'')+'" style="--story-duration:'+Number(s.duration_seconds||8)+'s"><i></i></span>'}).join('');
- var p=el('#story-main-photo');p.src=mediaURL(s.image_path);p.style.filter=cssFilter(s.image_filter);
+ var seconds=Math.min(3600,Math.max(5,Number(s.duration_seconds||8)));
+ el('#story-bars').innerHTML=active.map(function(v,j){return '<span class="'+(j<i?'done':j===i?'playing':'')+'" style="--story-duration:'+seconds+'s"><i></i></span>'}).join('');
+ var p=el('#story-main-photo');
+ p.src=mediaURL(s.image_path);
+ p.style.filter=cssFilter(s.image_filter);
+ p.style.objectFit=s.photo_fit==='contain'?'contain':'cover';
+ p.style.objectPosition=(Number(s.photo_x==null?50:s.photo_x)||0)+'% '+(Number(s.photo_y==null?50:s.photo_y)||0)+'%';
+ p.style.transform='scale('+Math.min(3,Math.max(1,Number(s.photo_zoom)||1))+')';
  el('#story-view-time').textContent=(s.title||'Mi story')+' · '+labelDate(s);
  var c=el('#story-view-caption');c.textContent=s.caption||'';c.style.color=s.caption_color||'#fff';c.className='story-textoverlay '+(s.caption_position||'bottom');
  el('#story-view-emoji').textContent=s.emoji||'';
- el('#story-song').textContent=s.music_title?'♫ '+s.music_title:'BYAN_BZ · Digital Hub';
- el('#story-mute').style.display=s.music_path?'grid':'none';
- var controls=el('#story-admin-actions');controls.innerHTML=isAdmin()?'<button type="button" id="story-edit">✎ Editar</button><button type="button" id="story-highlight">'+(s.pinned?'☆ Quitar destacada':'★ Destacar')+'</button><button type="button" id="story-delete">Eliminar</button>':'';
+ el('#story-song').textContent=s.music_title?'♫ '+s.music_title+(s.music_artist?' — '+s.music_artist:'')+(s.music_source==='audius'?' · Audius':''):'BYAN_BZ · Digital Hub';
+ el('#story-mute').style.display=(s.music_path||s.music_source==='audius'&&s.music_track_id)?'grid':'none';
+ var controls=el('#story-admin-actions');
+ controls.innerHTML=isAdmin()?'<button type="button" id="story-edit">✎ Editar</button><button type="button" id="story-highlight">'+(s.pinned?'☆ Quitar destacada':'★ Destacar')+'</button><button type="button" id="story-delete">Eliminar</button>':'';
  if(isAdmin()){
    el('#story-edit').onclick=function(){openComposer(s)};
    el('#story-delete').onclick=function(){deleteStory(s)};
    el('#story-highlight').onclick=function(){togglePinned(s)};
  }
- if(s.music_path){
-   audio=new Audio(mediaURL(s.music_path));
-   audio.preload='auto';audio.loop=true;audio.muted=false;
-   audio.addEventListener('loadedmetadata',function(){try{audio.currentTime=Math.min(Number(s.music_start_sec)||0,Math.max(0,audio.duration-.3))}catch(err){}},{once:true});
-   audio.play().catch(function(){el('#story-mute').textContent='▶'});
+ var audioSrc='';
+ if(s.music_source==='audius'&&s.music_track_id&&/^[A-Za-z0-9_-]{2,100}$/.test(s.music_track_id))
+   audioSrc='https://api.audius.co/v1/tracks/'+encodeURIComponent(s.music_track_id)+'/stream?app_name=BYAN_BZ_Digital_Hub';
+ else if(s.music_path)audioSrc=mediaURL(s.music_path);
+ if(audioSrc){
+   var current=new Audio(audioSrc);audio=current;
+   current.preload='metadata';current.loop=s.music_mode!=='full';
+   current.addEventListener('loadedmetadata',function(){
+     if(audio!==current)return;
+     var start=s.music_mode==='full'?0:Number(s.music_start_sec)||0;
+     try{current.currentTime=Math.min(start,Math.max(0,current.duration-.3))}catch(err){}
+   },{once:true});
+   current.addEventListener('ended',function(){if(s.music_mode==='full'&&audio===current&&index===i)showStory(i+1)});
+   current.addEventListener('error',function(){
+     if(audio!==current)return;
+     el('#story-song').textContent='La canción no está disponible. Puedes pasar a la siguiente story.';
+     if(s.music_mode==='full'){clearTimeout(timer);timer=setTimeout(function(){showStory(i+1)},8000)}
+   },{once:true});
+   current.play().catch(function(){if(audio===current)el('#story-mute').textContent='▶'});
  }
- timer=setTimeout(function(){showStory(index+1)},Math.min(20,Math.max(5,Number(s.duration_seconds||8)))*1000);
+ timer=setTimeout(function(){if(layer&&index===i)showStory(i+1)},seconds*1000);
 }
 async function togglePinned(s){
  if(!isAdmin())return;
@@ -110,7 +132,7 @@ async function deleteStory(s,skipConfirm){
  if(!skipConfirm&&!confirm('¿Eliminar esta story y sus archivos?'))return;
  var out=await db.from('stories').delete().eq('id',s.id);
  if(out.error){alert('No se pudo eliminar: '+out.error.message);return}
- var files=[s.image_path,s.music_path].filter(Boolean);
+ var files=[s.image_path];if(s.music_source==='upload'&&s.music_path)files.push(s.music_path);
  if(files.length){var removed=await db.storage.from(bucket).remove(files);if(removed.error)console.warn('No se pudo borrar un archivo:',removed.error)}
  removeLayer();await load();
 }
@@ -120,7 +142,7 @@ async function cleanExpired(){
  if(!confirm('¿Eliminar '+expired.length+' stories vencidas y sus fotos y música?'))return;
  for(var i=0;i<expired.length;i++){
    var s=expired[i],out=await db.from('stories').delete().eq('id',s.id);
-   if(!out.error)await db.storage.from(bucket).remove([s.image_path,s.music_path].filter(Boolean));
+   if(!out.error)await db.storage.from(bucket).remove([s.image_path].concat(s.music_source==='upload'&&s.music_path?[s.music_path]:[]));
  }
  await load();
 }
@@ -148,29 +170,9 @@ function composeMarkup(editing){
  +'</form></div></div>';
 }
 function openComposer(editing){
- if(!isAdmin()){alert('Inicia sesión como propietario para publicar');return}
- mount('compose',composeMarkup(editing));
- var filterName=editing?editing.image_filter:'original';
- var phone=el('#story-preview-image');
- if(editing){phone.src=mediaURL(editing.image_path);phone.style.display='block';el('#story-placeholder').hidden=true}
- var position=el('#story-position');position.value=editing?editing.caption_position:'bottom';
- var emoji=el('#story-emoji-select');emoji.value=editing?editing.emoji:'';
- function updatePreview(){
-   filterName=filterName in filters?filterName:'original';phone.style.filter=cssFilter(filterName);
-   var caption=el('#story-preview-caption');caption.textContent=el('#story-caption').value;caption.style.color=el('#story-color').value;caption.className='story-textoverlay '+position.value;
-   el('#story-preview-emoji').textContent=emoji.value;
- }
- el('#story-cancel').onclick=removeLayer;el('#story-back').onclick=removeLayer;
- el('#story-filters').addEventListener('click',function(e){var b=e.target.closest('[data-filter]');if(!b)return;filterName=b.dataset.filter;el('#story-filters').querySelectorAll('button').forEach(function(item){item.classList.toggle('active',item===b)});updatePreview()});
- ['#story-caption','#story-color','#story-position','#story-emoji-select'].forEach(function(x){el(x).addEventListener('input',updatePreview)});
- if(!editing){el('#story-file').onchange=function(){
-    if(photoPreview){URL.revokeObjectURL(photoPreview);photoPreview=null}
-    var file=this.files[0];if(file){photoPreview=URL.createObjectURL(file);phone.src=photoPreview;phone.style.display='block';el('#story-placeholder').hidden=true}
-    else{phone.style.display='none';el('#story-placeholder').hidden=false}
-    updatePreview();
- }}
- updatePreview();
- el('#story-form').onsubmit=function(e){e.preventDefault();submitStory(editing,filterName)};
+ if(!isAdmin()){alert('Solo el propietario puede publicar stories.');return}
+ if(!window.BYAN_STORY_STUDIO){alert('El editor está cargando. Actualiza la página y prueba otra vez.');return}
+ window.BYAN_STORY_STUDIO.open(editing,{db:db,isAdmin:function(){return isAdmin},mount:mount,removeLayer:removeLayer,mediaURL:mediaURL,compressPhoto:compressPhoto,uploadFile:uploadFile,load:load});
 }
 async function compressPhoto(file){
  if(!file||!/^image\/(jpeg|png|webp|avif)$/.test(file.type))throw Error('Usa una foto JPG, PNG, WebP o AVIF.');
