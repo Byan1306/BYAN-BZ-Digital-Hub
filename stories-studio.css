@@ -156,3 +156,30 @@
 .studio-song-main{min-width:0}
 .studio-results{max-height:30dvh}
 }
+
+
+/* Four music sources, visible official preview, CC audio credit */
+.studio-catalog-tabs{grid-template-columns:repeat(4,minmax(0,1fr))}
+.studio-source-tab{font-size:10px;padding:8px 3px;min-width:0;line-height:1.35}
+.studio-song.popular{display:grid;grid-template-columns:44px minmax(0,1fr);gap:10px;align-items:start}
+.studio-song.popular .studio-popular-actions{grid-column:1/-1;flex-direction:row;flex-wrap:wrap;align-items:center;gap:6px}
+.studio-song.popular .studio-popular-actions button,
+.studio-song.popular .studio-popular-actions a{padding:7px 10px;font-size:10px}
+.studio-official-player{border:1px solid #6856a8;border-radius:14px;padding:12px;margin:14px 0;background:linear-gradient(160deg,#272038,#11131f)}
+.studio-official-header{font-size:12px;font-weight:800;color:#f0e9ff;margin-bottom:10px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.studio-official-player p{margin:8px 0 0}
+.studio-track-selected .studio-search-hint a{font-size:11px;color:#d0b6ff;text-decoration:underline;margin-right:10px}
+.studio-track-selected .studio-search-hint strong{font-size:12px}
+.studio-track-selected .studio-search-hint .studio-check{margin:10px 0 0!important;font-weight:700!important;line-height:1.4}
+.studio-track-selected .studio-search-hint .studio-check input{flex-shrink:0}
+.story-license-credit{position:absolute;bottom:53px;left:15px;right:15px;z-index:5;
+ border-radius:9px;padding:7px 9px;background:#0b0a1bbd;backdrop-filter:blur(8px);
+ font-size:10px;line-height:1.4;color:#e5ddf5;word-break:break-word;max-height:70px;overflow:auto}
+.story-license-credit a{color:#f1cbff;text-decoration:underline}
+.story-license-credit:empty{display:none}
+@media(max-width:740px){
+.studio-catalog-tabs{grid-template-columns:repeat(4,minmax(0,1fr))}
+.studio-source-tab{font-size:9px;padding:8px 2px}
+.studio-song.popular .studio-popular-actions button,
+.studio-song.popular .studio-popular-actions a{font-size:9px;padding:6px 8px}
+}
