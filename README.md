@@ -70,11 +70,11 @@ El propietario entra a **Mis Stories → Crear story**. El editor visual ofrece:
 
 Se añadió un flujo de búsqueda musical de tres fuentes al editor de Stories:
 
-1. **Música popular** (descubrimiento por catálogo): consulta el buscador público iTunes/Apple Music de Costa Rica, con intento alternativo en EE. UU. cuando no hay coincidencias. Muestra título, artista, carátula, álbum, enlace oficial en Apple Music y búsqueda directa en YouTube. Los resultados de este catálogo **no se pueden poner directamente como banda sonora** porque la API no concede derechos de sincronización.
+1. **Música popular** (descubrimiento por catálogo): consulta el buscador público iTunes/Apple Music de Costa Rica, con intento alternativo en EE. UU. cuando no hay coincidencias. Muestra título, artista, carátula, álbum, enlace oficial en Apple Music y accesos oficiales a Apple Music. Los resultados de este catálogo **no se pueden poner directamente como banda sonora** porque la API no concede derechos de sincronización.
 2. **Para mi Story**: consulta la API de Audius y ordena hasta 35 resultados por coincidencia de nombre, artista y popularidad. El botón **Buscar versión ▶** de un resultado popular realiza esta búsqueda con el título de la canción. No garantiza que sea la grabación original ni sustituye autorizaciones de titulares de derechos.
 3. **Mis audios**: canciones subidas por el propietario a Supabase, tras confirmar permiso para su publicación; pueden reutilizarse.
 
-Una canción de Apple Music no se reproduce ni se extrae como audio; las vistas previas promocionales tampoco se sincronizan con fotografías. El enlace a YouTube se abre en su sitio, nunca en un reproductor invisible.
+Una canción de Apple Music no se reproduce ni se extrae como audio; las vistas previas promocionales tampoco se sincronizan con fotografías. La escucha promocional se hace con un reproductor oficial sin extraer su audio.
 
 **Uso:** abre [BYAN_BZ Digital Hub](https://byan1306.github.io/BYAN-BZ-Digital-Hub/), inicia sesión → **Mis Stories → Crear story → Música**. Prueba un artista famoso en «Música popular», toca «Buscar versión» y, si aparece una pista apropiada en Audius, escúchala y comprueba tus permisos antes de publicarla.
 
@@ -84,7 +84,7 @@ Una canción de Apple Music no se reproduce ni se extrae como audio; las vistas 
 ## 🎧 Escuchar música popular y publicar música de licencia abierta (v4)
 
 Se añadió un panel de música con **cuatro fuentes** al editor de Stories:
-- **Popular:** búsqueda en el catálogo público iTunes/Apple Music. Al pulsar «▶ Escuchar» aparece un **reproductor oficial visible de Apple Music** dentro del editor. Apple indica que, sin iniciar sesión, las vistas previas suelen durar 30 segundos. También puedes abrir Apple Music o YouTube mediante enlaces. **El audio de Apple Music NO se inserta en las Stories** (el reproductor no concede sincronización audiovisual).
+- **Popular:** búsqueda en el catálogo público iTunes/Apple Music. Al pulsar «▶ Escuchar» aparece un **reproductor oficial visible de Apple Music** dentro del editor. Apple indica que, sin iniciar sesión, las vistas previas suelen durar 30 segundos. También puedes abrir Apple Music mediante su enlace oficial. **El audio de Apple Music NO se inserta en las Stories** (el reproductor no concede sincronización audiovisual).
 - **Licencia CC:** busca en la [API Openverse](https://api.openverse.org/v1/) por título, artista o género. Muestra únicamente pistas indexadas como CC0, dominio público (PDM) o CC BY. Permite escuchar la pista en un reproductor de audio y seleccionar «Toda la canción» o «Elegir segundos». **Openverse no verifica los derechos de cada archivo**. Antes de publicar, el propietario debe abrir su fuente y licencia originales y confirmar los permisos. El sitio guarda los créditos, la licencia y enlaces, y los muestra en la Story.
 - **Audius:** búsqueda de pistas reproducibles en Audius, también con comprobación de derechos del artista y condiciones de la pista.
 - **Mis audios:** biblioteca privada de archivos propios/autorizados que se suben a Supabase.
@@ -96,21 +96,28 @@ Se añadió un panel de música con **cuatro fuentes** al editor de Stories:
 **Estado de verificación:** archivos de GitHub y JavaScript revisados; políticas SQL confirman que solo el propietario puede publicar. La reproducción de Apple Music y cada URL de Openverse debe verificarse mediante un navegador conectado.
 
 
-## 🎵 Música para Stories — sin YouTube (v5)
+## 🎵 Música en Stories — licencias y éxitos (v6)
 
-**YouTube fue retirado del editor de Stories** porque su reproductor visible no coincide con el diseño fotográfico de BYAN_BZ.
+BYAN_BZ conserva una **Story fotográfica a pantalla completa**, con música de fondo únicamente de fuentes permitidas. No hay reproductores de video integrados.
 
-### Fuentes gratuitas
+### Catálogos del editor
 
-1. **Openverse (Buscar música):** búsqueda automática de música publicada con licencia CC0, CC BY o marcada como dominio público. Verifica siempre las condiciones en la fuente original; el catálogo no garantiza todos los derechos.
-2. **Pixabay Music:** [buscar y descargar música](https://pixabay.com/music/) bajo la licencia de contenido de Pixabay. El editor ofrece un enlace directo. Descarga el archivo directamente desde Pixabay, comprueba la licencia de la pista y agrégalo desde «Subir audio».
-3. **Mixkit:** [buscar y descargar música](https://mixkit.co/free-stock-music/) bajo su licencia de música gratuita. Consulta el permiso de cada pista y añádela a tu biblioteca desde el editor.
-4. **Mis canciones:** biblioteca personal alojada en Supabase. Un archivo se sube una vez, se puede buscar y reutilizar; el propietario confirma que dispone de autorización.
-5. **Audius:** reproducción y búsqueda directas. El editor exige revisar derechos antes de sincronizar audio con la foto.
-6. **Solo escuchar:** reproductor oficial Apple Music para vistas previas; no permite insertar su catálogo como banda sonora de una Story.
+- **🎵 Buscar música (Openverse):** pistas indexadas como CC0, dominio público o CC BY. El propietario debe verificar los derechos, su vigencia y las condiciones aplicables. Las pistas pueden desaparecer o impedir la reproducción externa.
+- **♫ Mis canciones:** biblioteca de MP3/OGG/M4A/WAV autorizados. El editor comprueba metadatos y almacena título, artista, duración, tipo de autorización y una referencia del permiso.
+- **▶ Audius:** búsqueda de artistas; la reproducción disponible no equivale a licencia de sincronización. Se exige confirmar los permisos originales.
+- **★ Éxitos y licencias:** consulta el catálogo de Apple Music para encontrar canciones famosas y escuchar una vista previa autorizada. **No** transmite esos archivos como banda sonora de nuestras Stories.
 
-**Flujo recomendado:** «Mis Stories → Crear Story → Música → Pixabay Music ↗» o «Mixkit ↗» → descarga un MP3 licenciado → «Subir audio ↓» → indica título/autor y confirma permiso → guardar en «Mis canciones» → escuchar → elegir canción completa o un fragmento → publicar.
+### Cómo pedir una canción comercial
 
-**Sobre licencias:** música gratuita no equivale a música comercial con derechos ilimitados. No se debe redistribuir audio aislado como biblioteca de descargas. Las canciones comerciales famosas no están incluidas automáticamente; usar una canción famosa en una Story pública requiere una licencia de sincronización específica. No se hicieron cargos.
+1. En el editor, abre **Música → Éxitos y licencias**, busca el título (por ejemplo *Shock The World*) y pulsa **¿Usarla en Story?**. Si no aparece en el catálogo, usa **Solicitar permiso** desde el texto de búsqueda.
+2. El panel ofrece una solicitud de autorización copiable y un enlace a **Feed Clips**. La contratación, disponibilidad y cobertura territorial del catálogo dependen del proveedor.
+3. **Solo cuando consigas autorización válida y un archivo permitido**, pulsa **Ya tengo licencia y el audio** para abrir la biblioteca, cargarlo y registrar un tipo de permiso (original, licencia abierta, autorización directa o licencia comercial) y referencia privada.
+4. Selecciona fragmento o canción completa, y publica. No se contrata automáticamente ninguna licencia ni se incurre en cargos.
 
-**Verificación:** repositorio actualizado y sintaxis de JavaScript comprobada. Falta probar desde navegador la subida y reproducción de un MP3 real, teniendo en cuenta el límite de 12 MB por archivo de nuestro bucket actual.
+La autorización debe cubrir la grabación máster, la composición, la sincronización con fotografías, su comunicación pública en el sitio y la posibilidad de alojar el archivo directamente. Para referencias antiguas de la biblioteca se conserva el estado `legacy`; incorporar un dato no sustituye la verificación real de derechos.
+
+### Música gratuita descargada
+
+El editor incluye accesos a Pixabay Music y Mixkit, pero sus condiciones pueden restringir alojar el MP3 como archivo público, aunque permitan incorporarlo en una creación audiovisual. Verifica expresamente que tu uso técnico esté autorizado antes de subir audio a almacenamiento web. No redistribuyas archivos aislados fuera del alcance de su licencia.
+
+**Límites actuales:** no se garantiza tener el 90% de los éxitos comerciales ni el 100% de disponibilidad. El proveedor de música comercial no está contratado; no hay ninguna API de éxitos comerciales pagada. La búsqueda y las funciones de edición pasan pruebas de sintaxis estática, pero la reproducción y publicación con un audio real deben validarse en el navegador.
