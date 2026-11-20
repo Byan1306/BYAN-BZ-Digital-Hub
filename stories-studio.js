@@ -71,7 +71,7 @@ function setPanel(panel){
  if(panel==='filters')html=filtersPanel();
  if(panel==='options')html=optionsPanel();
  $('#studio-panel-body').innerHTML=html||'';
- if(panel==='music'){paintResults(); if(S.catalog==='library') loadLibrary();if(S.catalog==='openverse'&&S.searchTerm.length>=2)searchOpenverse();}
+ if(panel==='music'){paintResults(); if(S.catalog==='library')loadLibrary();}
 }
 function photoPanel(){
  return '<div class="studio-panel"><h3>Encuadre de foto</h3><p class="studio-sub">Como en las Stories: elige cómo llenar el marco y arrastra la foto para recolocarla.</p>'
@@ -391,7 +391,7 @@ async function searchAudius(){
 function setSource(source){
  if(!S)return;
  if(searchAbort)searchAbort.abort();
- S.catalog=source;S.results=[];S.loading=false;stopAudio();
+ S.catalog=source;S.results=[];S.loading=false;S.applePreview=null;stopAudio();
  setPanel('music');
  if(source==='audius'&&S.searchTerm.length>=2)searchAudius();
  if(source==='popular'&&S.searchTerm.length>=2)searchPopular();
