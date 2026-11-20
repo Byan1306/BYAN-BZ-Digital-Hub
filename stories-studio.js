@@ -141,12 +141,12 @@ function optionsPanel(){
 
 function musicPanel(){
  return '<div class="studio-panel"><h3>Música para tus Stories ♫</h3>'
- +'<p class="studio-sub">Primero mostramos música con licencias abiertas. Los éxitos comerciales quedan aparte para escucharlos sin publicarlos sin licencia.</p>'
+ +'<p class="studio-sub">Agrega música directamente a la foto: busca canciones libres o reutiliza los audios que guardes en tu biblioteca.</p>'
  +'<div class="studio-catalog-tabs">'
+ +'<button class="studio-source-tab'+(S.catalog==='openverse'?' active':'')+'" type="button" data-studio-source="openverse">🎵 Buscar música</button>'
+ +'<button class="studio-source-tab'+(S.catalog==='library'?' active':'')+'" type="button" data-studio-source="library">♫ Mis canciones</button>'
+ +'<button class="studio-source-tab'+(S.catalog==='audius'?' active':'')+'" type="button" data-studio-source="audius">▶ Audius</button>'
  +'<button class="studio-source-tab'+(S.catalog==='popular'?' active':'')+'" type="button" data-studio-source="popular">🎧 Solo escuchar</button>'
- +'<button class="studio-source-tab'+(S.catalog==='openverse'?' active':'')+'" type="button" data-studio-source="openverse">✓ Para publicar</button>'
- +'<button class="studio-source-tab'+(S.catalog==='audius'?' active':'')+'" type="button" data-studio-source="audius">▶ Audius*</button>'
- +'<button class="studio-source-tab'+(S.catalog==='library'?' active':'')+'" type="button" data-studio-source="library">♫ Mis audios</button>'
  +'</div>'
  +'<label class="studio-music-query"><input autocomplete="off" type="search" id="studio-search" placeholder="Nombre de la canción o artista" value="'+fns.esc(S.searchTerm)+'"></label>'
  +'<p class="studio-source-note">'+(S.catalog==='popular'?'Escucha éxitos comerciales en Apple Music. Esta pestaña NO permite publicarlos sin licencia audiovisual.':S.catalog==='openverse'?'Pistas declaradas CC0, dominio público o CC BY. Se comprobará que el audio cargue antes de publicar; verifica la licencia original.':S.catalog==='audius'?'Audios reproducibles de Audius. No todos autorizan sincronización con fotos; revisa los permisos originales.':'Tu propia música autorizada, lista para reproducir y reutilizar.')+'</p>'
