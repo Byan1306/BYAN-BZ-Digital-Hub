@@ -96,28 +96,40 @@ Se añadió un panel de música con **cuatro fuentes** al editor de Stories:
 **Estado de verificación:** archivos de GitHub y JavaScript revisados; políticas SQL confirman que solo el propietario puede publicar. La reproducción de Apple Music y cada URL de Openverse debe verificarse mediante un navegador conectado.
 
 
-## 🎵 Música en Stories — licencias y éxitos (v6)
+## 🎵 Música en Stories — un solo buscador (v7)
 
-BYAN_BZ conserva una **Story fotográfica a pantalla completa**, con música de fondo únicamente de fuentes permitidas. No hay reproductores de video integrados.
+El editor presenta **una caja de búsqueda musical** sin pestañas ni etiquetas de «con licencia»/«sin licencia» en la lista. Conserva el editor fotográfico, el control de fragmentos, los audios propios y las letras sincronizadas.
 
-### Catálogos del editor
+### Catálogos integrados
 
-- **🎵 Buscar música (Openverse):** pistas indexadas como CC0, dominio público o CC BY. El propietario debe verificar los derechos, su vigencia y las condiciones aplicables. Las pistas pueden desaparecer o impedir la reproducción externa.
-- **♫ Mis canciones:** biblioteca de MP3/OGG/M4A/WAV autorizados. El editor comprueba metadatos y almacena título, artista, duración, tipo de autorización y una referencia del permiso.
-- **▶ Audius:** búsqueda de artistas; la reproducción disponible no equivale a licencia de sincronización. Se exige confirmar los permisos originales.
-- **★ Éxitos y licencias:** consulta el catálogo de Apple Music para encontrar canciones famosas y escuchar una vista previa autorizada. **No** transmite esos archivos como banda sonora de nuestras Stories.
+El buscador consulta simultáneamente:
 
-### Cómo pedir una canción comercial
+- **Apple Music Search** para referencias de éxitos comerciales en las tiendas de Costa Rica y Estados Unidos (datos de la API promocional de Apple; no se permite utilizar el audio como banda sonora sin autorización).
+- **Audius** para pistas reproducibles vía la API de Audius; el propietario debe verificar los derechos antes de sincronizar las grabaciones con fotografías.
+- **Openverse** para pistas indexadas con licencias CC0, CC BY o marcadas como dominio público; verifica siempre su fuente y permisos reales.
+- **Mis canciones** guardadas en Supabase, con la referencia privada del tipo de permiso.
 
-1. En el editor, abre **Música → Éxitos y licencias**, busca el título (por ejemplo *Shock The World*) y pulsa **¿Usarla en Story?**. Si no aparece en el catálogo, usa **Solicitar permiso** desde el texto de búsqueda.
-2. El panel ofrece una solicitud de autorización copiable y un enlace a **Feed Clips**. La contratación, disponibilidad y cobertura territorial del catálogo dependen del proveedor.
-3. **Solo cuando consigas autorización válida y un archivo permitido**, pulsa **Ya tengo licencia y el audio** para abrir la biblioteca, cargarlo y registrar un tipo de permiso (original, licencia abierta, autorización directa o licencia comercial) y referencia privada.
-4. Selecciona fragmento o canción completa, y publica. No se contrata automáticamente ninguna licencia ni se incurre en cargos.
+Las coincidencias se normalizan, se deduplican dentro de cada fuente por título/artista/álbum y se ordenan por relevancia; hasta 110 resultados por búsqueda. Las respuestas parciales se mantienen aunque otro proveedor falle o aplique límites de solicitudes. Los catálogos no incluyen todas las canciones existentes. *Shock The World*, de That Boy Franco, tiene un enlace oficial a Apple Music como referencia de respaldo si no aparece mediante la API regional.
 
-La autorización debe cubrir la grabación máster, la composición, la sincronización con fotografías, su comunicación pública en el sitio y la posibilidad de alojar el archivo directamente. Para referencias antiguas de la biblioteca se conserva el estado `legacy`; incorporar un dato no sustituye la verificación real de derechos.
+### Al seleccionar una canción
 
-### Música gratuita descargada
+- **Éxito comercial:** aparece su ficha de Apple Music (reproductor oficial cuando está disponible) y la opción de gestionar la autorización correspondiente. **No se incorpora el audio comercial sin permiso**.
+- **Pista CC/Openverse o Audius:** permite escuchar, escoger segundos y publicar tras comprobar que la grabación tiene derechos suficientes. En Openverse se muestran los créditos y la licencia en la Story.
+- **Canción en biblioteca privada:** permite escuchar y publicar los archivos autorizados que hayas guardado. El formulario registra el tipo de permiso y la referencia privada.
 
-El editor incluye accesos a Pixabay Music y Mixkit, pero sus condiciones pueden restringir alojar el MP3 como archivo público, aunque permitan incorporarlo en una creación audiovisual. Verifica expresamente que tu uso técnico esté autorizado antes de subir audio a almacenamiento web. No redistribuyas archivos aislados fuera del alcance de su licencia.
+Puedes importar tu propio MP3/OGG/M4A/WAV autorizado desde «Añadir un audio a Mis canciones»; máximo 12 MB por archivo. El editor comprueba que el archivo pueda cargarse antes de guardar la Story.
 
-**Límites actuales:** no se garantiza tener el 90% de los éxitos comerciales ni el 100% de disponibilidad. El proveedor de música comercial no está contratado; no hay ninguna API de éxitos comerciales pagada. La búsqueda y las funciones de edición pasan pruebas de sintaxis estática, pero la reproducción y publicación con un audio real deben validarse en el navegador.
+### Limitación de derechos
+
+Ninguna API de descubrimiento concede por sí sola una licencia para sincronizar con fotografías, alojar y comunicar públicamente grabaciones comerciales de terceros. El sitio puede mostrarlas como resultados de búsqueda, pero publicarlas con sonido requiere un permiso adecuado o una API comercial con contrato. El uso no monetizado no elimina esos derechos.
+
+Se investigaron alternativas comerciales como Feed Clips: su catálogo de éxitos comerciales y su servicio global tienen diferencias de disponibilidad territorial y repertorio. No hay un contrato activo ni cargos generados. Sin un acuerdo, no es posible prometer un 90% de éxitos disponibles para sincronizar ni el 100% de reproducción.
+
+Documentación de referencia:
+- https://developer.spotify.com/policy
+- https://performance-partners.apple.com/search-api
+- https://clips.feed.fm/docs/
+- https://www.feed.fm/clips/global-music-solution
+- https://www.wipo.int/wipolex/es/legislation/details/11316
+
+**Estado de prueba:** archivos de GitHub revisados y validados sintácticamente, componentes de resultados simulados; las consultas HTTP reales, la reproducción y la publicación con música deben verificarse desde el navegador.
