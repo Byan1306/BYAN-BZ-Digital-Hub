@@ -478,9 +478,11 @@ function attachEvents(){
   if(t.id==='studio-photo-reset'){S.photoX=50;S.photoY=50;S.photoZoom=1;setPanel('photo');preview();return}
   if(t.dataset.studioFilter){S.filter=t.dataset.studioFilter;setPanel('filters');preview();return}
   if(t.dataset.studioSource){setSource(t.dataset.studioSource);return}
+  if(t.dataset.applePlay!==undefined){var chosen=S.results[Number(t.dataset.applePlay)];if(!chosen||chosen.source!=='popular')return;S.applePreview=chosen;showApplePreview();var player=$('#studio-apple-preview');if(player)player.scrollIntoView({block:'nearest',behavior:'smooth'});return}
+  if(t.dataset.findCc!==undefined){var free=S.results[Number(t.dataset.findCc)];if(!free)return;S.searchTerm=free.title;S.searchArtist=free.artist;S.applePreview=null;setSource('openverse');return}
   if(t.dataset.studioSong!==undefined){onSongSelected(Number(t.dataset.studioSong));return}
-  if(t.dataset.studioSuggest){S.searchTerm=t.dataset.studioSuggest;setPanel('music');if(S.catalog==='popular')searchPopular();else if(S.catalog==='audius')searchAudius();return}
-  if(t.dataset.findPlayable!==undefined){var hit=S.results[Number(t.dataset.findPlayable)];if(!hit)return;S.searchTerm=hit.title;S.searchArtist=hit.artist;setSource('audius');return}
+  if(t.dataset.studioSuggest){S.searchTerm=t.dataset.studioSuggest;S.applePreview=null;setPanel('music');if(S.catalog==='popular')searchPopular();else if(S.catalog==='audius')searchAudius();else if(S.catalog==='openverse')searchOpenverse();return}
+  if(t.dataset.findPlayable!==undefined){var hit=S.results[Number(t.dataset.findPlayable)];if(!hit)return;S.searchTerm=hit.title;S.searchArtist=hit.artist;S.applePreview=null;setSource('audius');return}
   if(t.id==='studio-clear-song'){S.selected=null;S.mode='clip';S.start=0;stopAudio();setPanel('music');return}
   if(t.dataset.studioMode){S.mode=t.dataset.studioMode;S.start=S.mode==='full'?0:S.start;stopAudio();updateSelectionMarkup();return}
   if(t.id==='studio-listen'){listen();return}
@@ -508,17 +510,18 @@ function attachEvents(){
   if(['studio-text-value','studio-text-color','studio-text-position','studio-emoji'].includes(t.id)){preview();return}
   if(t.id==='studio-title')S.title=t.value;
   if(t.id==='studio-highlight')S.pinned=t.checked;
+  if(t.id==='studio-license-confirm')S.licenseConfirmed=t.checked;
   if(t.id==='studio-lyrics-enabled')S.lyricsEnabled=t.checked;
   if(t.id==='studio-lyrics-lrc')S.lyricsLrc=t.value;
   if(t.id==='studio-lyrics-style')S.lyricsStyle=t.value;
   if(['studio-lyrics-enabled','studio-lyrics-lrc','studio-lyrics-style'].includes(t.id)){preview();return}
   if(t.id==='studio-no-music-duration')S.noMusicDuration=fns.clamp(t.value,5,20);
   if(t.id==='studio-search'){
-   S.searchTerm=t.value;S.searchArtist='';
+   S.searchTerm=t.value;S.searchArtist='';S.applePreview=null;
    if(S.catalog==='library')updateResultsFromLibrary();
    else{
     if(searchTimer)clearTimeout(searchTimer);
-    searchTimer=setTimeout(function(){if(!S)return;if(S.catalog==='popular')searchPopular();else if(S.catalog==='audius')searchAudius()},380);
+    searchTimer=setTimeout(function(){if(!S)return;if(S.catalog==='popular')searchPopular();else if(S.catalog==='audius')searchAudius();else if(S.catalog==='openverse')searchOpenverse()},380);
    }
    return;
   }
@@ -559,6 +562,11 @@ function payloadForStory(){
   music_title:t?t.title.slice(0,100):'',
   music_artist:t?(t.artist||'').slice(0,100):'',
   music_link:t&&t.source==='audius'?safeLink(t.link)||null:null,
+  music_external_url:t&&t.source==='openverse'?safeHTTPS(t.audioUrl)||null:null,
+  music_license:t&&t.source==='openverse'?String(t.license||'').slice(0,32):'',
+  music_license_url:t&&t.source==='openverse'?safeHTTPS(t.licenseUrl)||null:null,
+  music_attribution:t&&t.source==='openverse'?String(t.attribution||'').slice(0,450):'',
+  music_origin:t&&t.source==='openverse'?safeHTTPS(t.link)||null:null,
   music_track_seconds:t&&t.duration?Math.round(t.duration):null,
   music_start_sec:t&&S.mode==='clip'?Math.round(fns.clamp(S.start,0,7200)):0,
   duration_seconds:duration,
@@ -571,6 +579,7 @@ async function publish(){
  if(!S||S.busy)return;
  if(!opts.isAdmin()){setError('No tienes permiso para publicar. Inicia sesión como propietario.');return}
  if(!S.file&&!S.editing){setPanel('photo');setError('Primero elige una foto.');return}
+ if(S.selected&&S.selected.source==='openverse'&&!S.licenseConfirmed){setPanel('music');setError('Antes de publicar, abre la fuente original, verifica la licencia y marca la confirmación debajo de la canción.');return}
  if(S.selected&&S.mode==='clip'&&S.selected.duration && S.start+S.clip>S.selected.duration){
   setPanel('music');setError('El fragmento debe terminar antes que la canción.');return
  }
@@ -601,11 +610,12 @@ function open(editing,options){
  options.mount('compose',markup());
  opts=options;
  S=initStoryState(editing);
- if(editing&&(editing.music_path||editing.music_track_id)){
+ if(editing&&(editing.music_path||editing.music_track_id||editing.music_external_url)){
   S.selected={source:editing.music_source||'upload',
-    id:editing.music_track_id||String(editing.music_path||''),
+    id:editing.music_track_id||String(editing.music_path||editing.music_external_url||''),
     title:editing.music_title||'Audio',artist:editing.music_artist||'',
-    path:editing.music_path||null,link:editing.music_link||'',
+    path:editing.music_path||null,link:editing.music_source==='openverse'?(editing.music_origin||''):(editing.music_link||''),
+    audioUrl:editing.music_external_url||null,license:editing.music_license||'',licenseUrl:editing.music_license_url||null,attribution:editing.music_attribution||'',
     duration:Number(editing.music_track_seconds)||0};
  }
  attachEvents();setPanel('photo');preview();
