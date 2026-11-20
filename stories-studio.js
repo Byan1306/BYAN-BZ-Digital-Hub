@@ -218,7 +218,7 @@ function selectedMarkup(){
  if(!S.selected)return '<div class="studio-message">Ninguna canción seleccionada. Puedes publicar la foto sin música.</div>';
  var t=S.selected;
  var dur=t.duration||null;
- var maxStart=dur?Math.max(0,dur-5):600;
+ var maxStart=t.source==='youtube'?7200:dur?Math.max(0,dur-5):600;
  S.start=fns.clamp(S.start,0,maxStart);
  var maxClip=Math.max(5,Math.min(120,dur?dur-S.start:120));
  S.clip=fns.clamp(S.clip,5,maxClip);
@@ -229,13 +229,13 @@ function selectedMarkup(){
   +(safeHTTPS(t.link)?'<a href="'+fns.esc(safeHTTPS(t.link))+'" target="_blank" rel="noopener noreferrer">Ver origen ↗</a>':'')
   +'<label class="studio-check"><input type="checkbox" id="studio-license-confirm"'+(S.licenseConfirmed?' checked':'')+'> Revisé la fuente original y confirmo que puedo usar esta grabación junto a mi fotografía.</label></div>':
   t.source==='audius'?'<div class="studio-search-hint"><strong>Permisos por verificar · Audius</strong><p class="studio-note">Que se pueda escuchar no significa que esté autorizada para usarla en una Story. Comprueba los derechos y la licencia de la grabación.</p><label class="studio-check"><input type="checkbox" id="studio-license-confirm"'+(S.licenseConfirmed?' checked':'')+'> Confirmo que esta canción puede acompañar mi Story.</label></div>':'';
- var trackLink=t.source==='audius'?safeLink(t.link):t.source==='openverse'?safeHTTPS(t.link):'';
+ var trackLink=t.source==='youtube'?'https://www.youtube.com/watch?v='+t.id:t.source==='audius'?safeLink(t.link):t.source==='openverse'?safeHTTPS(t.link):'';
  return '<div class="studio-track-selected"><div class="studio-flex"><div style="min-width:0"><strong>♫ '+fns.esc(t.title)+'</strong><small>'+fns.esc(t.artist||'Artista')+' · '+(dur?fns.minutes(dur):'Duración sin confirmar')+'</small></div>'
  +'<button class="studio-ghost" id="studio-clear-song" type="button" title="Quitar canción">✕</button></div>'
- +'<div class="studio-preview-controls"><button id="studio-listen" class="studio-action secondary" type="button">▶ Escuchar</button>'
+ +'<div class="studio-preview-controls"><button id="studio-listen" class="studio-action secondary" type="button">'+(t.source==='youtube'?'▶ Ver video':'▶ Escuchar')+'</button>'
  +(trackLink?'<a href="'+fns.esc(trackLink)+'" target="_blank" rel="noopener noreferrer" class="studio-note">Ver fuente original ↗</a>':'')+'</div>'
  +licenseLine
- +'<div class="studio-mode"><button type="button" data-studio-mode="full" class="'+(S.mode==='full'?'active':'')+'">Toda la canción</button>'
+ +'<div class="studio-mode">'+(t.source==='youtube'?'':'<button type="button" data-studio-mode="full" class="'+(S.mode==='full'?'active':'')+'">Toda la canción</button>')
  +'<button type="button" data-studio-mode="clip" class="'+(S.mode==='clip'?'active':'')+'">Elegir segundos</button></div>'
  +'<div class="studio-timeline">'
  +(S.mode==='clip'?'<div class="studio-time-labels"><span>Inicio <b id="studio-start-label" class="studio-time-value">'+fns.minutes(S.start)+'</b></span>'
@@ -270,6 +270,7 @@ function renderSearchMessage(msg){
 }
 function paintResults(){
  var box=$('#studio-results');if(!box||!S||S.panel!=='music')return;
+ if(S.catalog==='youtube'){box.innerHTML='<div class="studio-search-status">YouTube: pulsa Buscar, copia el enlace y usa Vincular video. Necesitas que el autor permita insertarlo en otras páginas.</div>';showApplePreview();return}
  if(S.loading){renderSearchMessage('Buscando canciones…');showApplePreview();return}
  var q=S.searchTerm.trim();
  if(S.catalog!=='library'&&q.length<2){
@@ -456,6 +457,7 @@ function onSongSelected(i){
 }
 function listen(){
  if(!S||!S.selected)return;
+ if(S.selected.source==='youtube'){ytPreview();var p=$('#studio-yt-preview');if(p)p.scrollIntoView({block:'nearest',behavior:'smooth'});return}
  if(listenAudio){stopAudio();var btn=$('#studio-listen');if(btn)btn.textContent='▶ Escuchar';return}
  var src=fns.url(S.selected);
  if(!src){setError('Esta canción no tiene una fuente reproducible.');return}
@@ -541,6 +543,8 @@ function attachEvents(){
   if(t.dataset.studioMode){S.mode=t.dataset.studioMode;S.start=S.mode==='full'?0:S.start;stopAudio();updateSelectionMarkup();return}
   if(t.id==='studio-listen'){listen();return}
   if(t.id==='studio-upload-track'){uploadMusic();return}
+  if(t.id==='studio-search-yt'){window.open('https://www.youtube.com/results?search_query='+encodeURIComponent(S.searchTerm.trim()||'música oficial'),'_blank','noopener,noreferrer');return}
+  if(t.id==='studio-attach-yt'){selectYT();return}
   if(t.id==='studio-go-music'){setPanel('music');return}
   if(t.id==='studio-stamp-lyric'){
    var secs=listenAudio?listenAudio.currentTime:(S.start||0),mm=Math.floor(secs/60),ss=(secs%60).toFixed(2).padStart(5,'0'),area=$('#studio-lyrics-lrc');if(!area)return;
@@ -583,7 +587,7 @@ function attachEvents(){
   if(t.id==='studio-clip'){S.clip=fns.clamp(t.value,5,120);stopAudio();var label=$('#studio-clip-label');if(label)label.textContent=S.clip+' s';return}
  });
  root.addEventListener('change',function(e){
-   var t=e.target;if(t.id==='studio-photo-file'){setPhoto(t.files[0])}if(t.id==='studio-start'||t.id==='studio-clip'){updateSelectionMarkup()}
+   var t=e.target;if(t.id==='studio-photo-file'){setPhoto(t.files[0])}if(t.id==='studio-start'||t.id==='studio-clip'){updateSelectionMarkup();if(S.selected&&S.selected.source==='youtube')ytPreview()}
  });
  var canvas=$('#studio-canvas'),pointer=null;
  canvas.addEventListener('pointerdown',function(e){if(!S.file&&!S.editing)return;pointer={x:e.clientX,y:e.clientY,sx:S.photoX,sy:S.photoY};try{canvas.setPointerCapture(e.pointerId)}catch(err){}});
@@ -611,7 +615,7 @@ function payloadForStory(){
   title:S.title.trim().slice(0,72),image_filter:S.filter,caption:S.caption.trim().slice(0,280),
   caption_color:S.captionColor,caption_position:S.captionPosition,emoji:S.emoji,
   pinned:S.pinned,music_mode:t?S.mode:'clip',music_source:t?t.source:'upload',
-  music_track_id:t&&t.source==='audius'?t.id:null,
+  music_track_id:t&&(t.source==='audius'||t.source==='youtube')?t.id:null,
   music_path:t&&(t.source==='library'||t.source==='upload')?t.path:null,
   music_title:t?t.title.slice(0,100):'',
   music_artist:t?(t.artist||'').slice(0,100):'',
@@ -666,7 +670,7 @@ async function publish(){
  S.busy=true;var btn=$('#studio-publish');btn.disabled=true;btn.textContent='Comprobando audio…';setError('');
  var uploaded=[];
  try{
-  if(S.selected){var audioCheck=await verifyAudioBeforePublish(S.selected);if(!audioCheck.ok)throw Error(audioCheck.message)}
+  if(S.selected&&S.selected.source==='youtube'){if(!/^[A-Za-z0-9_-]{11}$/.test(S.selected.id))throw Error('Enlace de YouTube inválido.')}else if(S.selected){var audioCheck=await verifyAudioBeforePublish(S.selected);if(!audioCheck.ok)throw Error(audioCheck.message)}
   btn.textContent='Publicando…';
   if(S.editing){
     var out=await opts.db.from('stories').update(payload).eq('id',S.editing.id);
@@ -691,6 +695,7 @@ function open(editing,options){
  opts=options;
  S=initStoryState(editing);
  if(editing&&(editing.music_path||editing.music_track_id||editing.music_external_url)){
+  if(editing.music_source==='youtube'){S.catalog='youtube';S.ytLink='https://www.youtube.com/watch?v='+editing.music_track_id;S.ytTitle=editing.music_title||'';}
   S.selected={source:editing.music_source||'upload',
     id:editing.music_track_id||String(editing.music_path||editing.music_external_url||''),
     title:editing.music_title||'Audio',artist:editing.music_artist||'',
