@@ -174,7 +174,8 @@ function selectedMarkup(){
   +'<div class="studio-note">Crédito: '+fns.esc(t.attribution||t.artist+' — '+t.title)+'</div>'
   +(safeHTTPS(t.licenseUrl)?'<a href="'+fns.esc(safeHTTPS(t.licenseUrl))+'" target="_blank" rel="noopener noreferrer">Leer licencia ↗</a> ':'')
   +(safeHTTPS(t.link)?'<a href="'+fns.esc(safeHTTPS(t.link))+'" target="_blank" rel="noopener noreferrer">Ver origen ↗</a>':'')
-  +'<label class="studio-check"><input type="checkbox" id="studio-license-confirm"'+(S.licenseConfirmed?' checked':'')+'> Revisé la fuente original y confirmo que puedo usar esta grabación junto a mi fotografía.</label></div>':'';
+  +'<label class="studio-check"><input type="checkbox" id="studio-license-confirm"'+(S.licenseConfirmed?' checked':'')+'> Revisé la fuente original y confirmo que puedo usar esta grabación junto a mi fotografía.</label></div>':
+  t.source==='audius'?'<div class="studio-search-hint"><strong>Permisos por verificar · Audius</strong><p class="studio-note">Que se pueda escuchar no significa que esté autorizada para usarla en una Story. Comprueba los derechos y la licencia de la grabación.</p><label class="studio-check"><input type="checkbox" id="studio-license-confirm"'+(S.licenseConfirmed?' checked':'')+'> Confirmo que esta canción puede acompañar mi Story.</label></div>':'';
  var trackLink=t.source==='audius'?safeLink(t.link):t.source==='openverse'?safeHTTPS(t.link):'';
  return '<div class="studio-track-selected"><div class="studio-flex"><div style="min-width:0"><strong>♫ '+fns.esc(t.title)+'</strong><small>'+fns.esc(t.artist||'Artista')+' · '+(dur?fns.minutes(dur):'Duración sin confirmar')+'</small></div>'
  +'<button class="studio-ghost" id="studio-clear-song" type="button" title="Quitar canción">✕</button></div>'
@@ -603,7 +604,7 @@ async function publish(){
  if(!S||S.busy)return;
  if(!opts.isAdmin()){setError('No tienes permiso para publicar. Inicia sesión como propietario.');return}
  if(!S.file&&!S.editing){setPanel('photo');setError('Primero elige una foto.');return}
- if(S.selected&&S.selected.source==='openverse'&&!S.licenseConfirmed){setPanel('music');setError('Antes de publicar, abre la fuente original, verifica la licencia y marca la confirmación debajo de la canción.');return}
+ if(S.selected&&['openverse','audius'].includes(S.selected.source)&&!S.licenseConfirmed){setPanel('music');setError('Antes de publicar, verifica en la fuente original los permisos de sincronización y marca la confirmación debajo de la canción.');return}
  if(S.selected&&S.mode==='clip'&&S.selected.duration && S.start+S.clip>S.selected.duration){
   setPanel('music');setError('El fragmento debe terminar antes que la canción.');return
  }
