@@ -57,7 +57,7 @@ function mount(className,markup){
 function viewerMarkup(){
  return '<div class="story-dialog story-viewer" id="story-viewer">'
  +'<div class="story-backdrop"><img class="story-photo" id="story-main-photo" alt="Story de BYAN_BZ"><div class="story-shade"></div></div>'
- +'<div class="story-textoverlay bottom" id="story-view-caption"></div><div class="story-emoji" id="story-view-emoji"></div>'
+ +'<div class="story-lyrics karaoke" id="story-view-lyrics" aria-live="off"></div><div class="story-textoverlay bottom" id="story-view-caption"></div><div class="story-emoji" id="story-view-emoji"></div>'
  +'<div class="story-vtop"><div class="story-bars" id="story-bars"></div><div class="story-vheader"><div class="story-avatar">BZ</div><div><strong>BYAN_BZ</strong><small id="story-view-time"></small></div><div class="spacer"></div><button type="button" class="story-icon-btn" id="story-mute" title="Silenciar música" aria-label="Silenciar música">♫</button><button type="button" class="story-icon-btn" id="story-close" aria-label="Cerrar">×</button></div></div>'
  +'<div class="story-controls"><button type="button" class="story-tap" id="story-prev" aria-label="Story anterior"></button><button type="button" class="story-tap" id="story-next" aria-label="Siguiente story"></button></div>'
  +'<div class="story-vfooter"><div class="story-sound-label" id="story-song"></div><div class="story-admin-actions" id="story-admin-actions"></div></div>'
@@ -74,6 +74,15 @@ function openViewer(i){
  layer.addEventListener('touchend',function(e){var dx=e.changedTouches[0].clientX-startX;if(Math.abs(dx)>70)showStory(index+(dx<0?1:-1))},{passive:true});
  showStory(i);
 }
+
+function parseStoryLyrics(raw){
+ return String(raw||'').split(/\r?\n/).map(function(line){
+  var m=line.match(/^\[(\d{1,2}):(\d{2})(?:\.(\d{1,3}))?\]\s*(.{0,200})$/);
+  if(!m||Number(m[2])>59||!m[4].trim())return null;
+  return {time:Number(m[1])*60+Number(m[2])+(m[3]?Number(m[3].padEnd(3,'0'))/1000:0),text:m[4].trim()};
+ }).filter(Boolean).sort(function(a,b){return a.time-b.time}).slice(0,140);
+}
+
 function showStory(i){
  if(!layer)return;
  if(i<0){showStory(0);return}
@@ -90,6 +99,15 @@ function showStory(i){
  el('#story-view-time').textContent=(s.title||'Mi story')+' · '+labelDate(s);
  var c=el('#story-view-caption');c.textContent=s.caption||'';c.style.color=s.caption_color||'#fff';c.className='story-textoverlay '+(s.caption_position||'bottom');
  el('#story-view-emoji').textContent=s.emoji||'';
+ var lyricBox=el('#story-view-lyrics');
+ var lyricLines=s.lyrics_enabled?parseStoryLyrics(s.lyrics_lrc):[];
+ lyricBox.className='story-lyrics '+(['karaoke','clean','glass'].includes(s.lyrics_style)?s.lyrics_style:'karaoke');
+ lyricBox.style.display=lyricLines.length?'block':'none';
+ function paintLyric(at){if(!lyricLines.length)return;
+   var line=lyricLines.filter(function(x){return x.time<=at}).pop();
+   lyricBox.textContent=line?line.text:'';
+ }
+ paintLyric(s.music_mode==='full'?0:Number(s.music_start_sec)||0);
  el('#story-song').textContent=s.music_title?'♫ '+s.music_title+(s.music_artist?' — '+s.music_artist:'')+(s.music_source==='audius'?' · Audius':''):'BYAN_BZ · Digital Hub';
  el('#story-mute').style.display=(s.music_path||s.music_source==='audius'&&s.music_track_id)?'grid':'none';
  var controls=el('#story-admin-actions');
@@ -111,6 +129,7 @@ function showStory(i){
      var start=s.music_mode==='full'?0:Number(s.music_start_sec)||0;
      try{current.currentTime=Math.min(start,Math.max(0,current.duration-.3))}catch(err){}
    },{once:true});
+   current.addEventListener('timeupdate',function(){if(audio===current&&index===i)paintLyric(current.currentTime)});
    current.addEventListener('ended',function(){if(s.music_mode==='full'&&audio===current&&index===i)showStory(i+1)});
    current.addEventListener('error',function(){
      if(audio!==current)return;
