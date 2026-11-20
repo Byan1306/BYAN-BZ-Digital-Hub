@@ -50,19 +50,18 @@ on conflict (user_id) do nothing;
 ## Seguridad
 Tablas públicas con RLS, permisos de escritura reservados exclusivamente a IDs de `site_admins`. Las fotografías que publiques se verán públicamente. No compartas la clave `service_role` ni claves secretas.
 
-## ✨ Stories estilo Instagram (novedad)
-La sección **Mis Stories** permite publicar fotografías verticales con:
-- 8 filtros visuales (Natural, Cine, Vintage, B&N, Cálido, Frío, Violeta y Dreamy).
-- Texto, color, posición (arriba / centro / abajo) y stickers de emoji.
-- Música en MP3/OGG/WAV/M4A subida por el administrador (solo audio con derechos de publicación).
-- Duración configurable de 5 a 20 segundos, reproducción vertical con barra de progreso y navegación táctil.
-- Stories normales de 24 horas y opción **Destacada** permanente.
-- Edición de textos, filtros y duración, eliminación, y limpieza manual de archivos vencidos.
+## ✨ Stories — editor visual y música (v2)
 
-**Publicar:** inicia sesión en la página → busca **Mis Stories** → **Crear story** → elige foto, música opcional y ajustes → **Publicar story**. Aparece en el sitio sin modificar HTML ni repositorio.
+El propietario entra a **Mis Stories → Crear story**. El editor visual ofrece:
+- **Foto**: ajuste «Llenar» (recorta el fondo) o «Foto completa» (sin recortar), arrastrar para ajustar horizontal/vertical y zoom de 100% a 300%.
+- **Música**: búsqueda por título/artista mediante el [catálogo público Audius](https://audius.co/) y biblioteca de audios propios.
+- **Elección de audio**: «Toda la canción» (duración real, hasta 60 min) o «Elegir segundos» (inicio en una línea de tiempo y entre 5 y 120 segundos).
+- **Escuchar** antes de guardar; muestra artista y título.
+- **Texto**, stickers, ocho filtros y modo Destacada o story normal de 24 horas.
+- **Publicación** y edición con permisos del propietario; visitantes únicamente pueden ver/reproducir.
 
-**Almacenamiento:** Supabase `public.stories` y bucket público `byan-stories`; solo `site_admins` puede publicar/editar/borrar. El archivo completo de audio se almacena, aunque suene solo 5–20 segundos. Para ahorrar cuota usa archivos pequeños. Las stories que vencen dejan de aparecer automáticamente pero **sus archivos se conservan hasta usar «Limpiar vencidas»**.
+**Importante:** Audius es un servicio externo a Instagram; no ofrece ni garantiza las mismas canciones, y algunas pistas podrían no estar disponibles por restricciones de los artistas. Se transmiten desde Audius, no se descargan al bucket del proyecto. Se atribuye el título, artista y origen. Subir un audio propio exige confirmar que puedes publicarlo. No se licencian automáticamente canciones comerciales que no pertenezcan a ese catálogo.
 
-**Derechos de autor:** este editor no se conecta a la biblioteca musical de Instagram ni licencia canciones comerciales. Publica únicamente música original, de uso libre o para la que tengas permisos.
+**Almacenamiento:** Base de datos `stories`, biblioteca `music_library` y bucket `byan-stories`. El propietario puede reutilizar audios de su biblioteca sin duplicarlos. Al borrar una story se elimina su foto pero **no** la canción compartida de la biblioteca. Las stories vencidas se ocultan y sus imágenes pueden limpiarse desde «Limpiar vencidas».
 
-**Verificación:** código y permisos revisados; el flujo de carga de una foto/música real debe probarse en un navegador con la cuenta de administrador.
+**Pruebas:** código y permisos SQL revisados; una publicación real con Audius y archivo musical debe validarse con sesión de propietario en el navegador. Pueden existir restricciones de reproducción automática de audio en ciertos navegadores.
