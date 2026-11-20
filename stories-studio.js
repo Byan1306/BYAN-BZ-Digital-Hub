@@ -435,7 +435,7 @@ async function publish(){
     var created=await opts.db.from('stories').insert(payload).select('id').single();
     if(created.error)throw Error(created.error.message);
   }
-  opts.removeLayer();await opts.load();
+  var refreshStories=opts.load;opts.removeLayer();await refreshStories();
  }catch(e){
   setError('No se pudo publicar: '+e.message);
   if(uploaded.length)await opts.db.storage.from('byan-stories').remove(uploaded);
