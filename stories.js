@@ -60,7 +60,7 @@ function viewerMarkup(){
  +'<div class="story-lyrics karaoke" id="story-view-lyrics" aria-live="off"></div><div class="story-textoverlay bottom" id="story-view-caption"></div><div class="story-emoji" id="story-view-emoji"></div>'
  +'<div class="story-vtop"><div class="story-bars" id="story-bars"></div><div class="story-vheader"><div class="story-avatar">BZ</div><div><strong>BYAN_BZ</strong><small id="story-view-time"></small></div><div class="spacer"></div><button type="button" class="story-icon-btn" id="story-mute" title="Silenciar música" aria-label="Silenciar música">♫</button><button type="button" class="story-icon-btn" id="story-close" aria-label="Cerrar">×</button></div></div>'
  +'<div class="story-controls"><button type="button" class="story-tap" id="story-prev" aria-label="Story anterior"></button><button type="button" class="story-tap" id="story-next" aria-label="Siguiente story"></button></div>'
- +'<div class="story-vfooter"><div class="story-sound-label" id="story-song"></div><div class="story-admin-actions" id="story-admin-actions"></div></div>'
+ +'<div class="story-license-credit" id="story-credit"></div><div class="story-vfooter"><div class="story-sound-label" id="story-song"></div><div class="story-admin-actions" id="story-admin-actions"></div></div>'
  +'</div>';
 }
 function openViewer(i){
@@ -109,7 +109,13 @@ function showStory(i){
  }
  paintLyric(s.music_mode==='full'?0:Number(s.music_start_sec)||0);
  el('#story-song').textContent=s.music_title?'♫ '+s.music_title+(s.music_artist?' — '+s.music_artist:'')+(s.music_source==='audius'?' · Audius':''):'BYAN_BZ · Digital Hub';
- el('#story-mute').style.display=(s.music_path||s.music_source==='audius'&&s.music_track_id)?'grid':'none';
+ el('#story-mute').style.display=(s.music_path||s.music_source==='audius'&&s.music_track_id||s.music_source==='openverse'&&s.music_external_url)?'grid':'none';
+ var credit=el('#story-credit');credit.replaceChildren();
+ if(s.music_source==='openverse'){
+   credit.style.display='block';
+   var creditText=document.createElement('span');creditText.textContent='♫ '+(s.music_attribution||s.music_artist+' — '+s.music_title)+' ('+String(s.music_license||'CC').toUpperCase()+')';credit.appendChild(creditText);
+   try{var origin=new URL(s.music_origin||'');if(origin.protocol==='https:'){var anchor=document.createElement('a');anchor.href=origin.href;anchor.target='_blank';anchor.rel='noopener noreferrer';anchor.textContent=' · Fuente y licencia ↗';credit.appendChild(anchor)}}catch(err){}
+ }else{credit.style.display='none'}
  var controls=el('#story-admin-actions');
  controls.innerHTML=isAdmin()?'<button type="button" id="story-edit">✎ Editar</button><button type="button" id="story-highlight">'+(s.pinned?'☆ Quitar destacada':'★ Destacar')+'</button><button type="button" id="story-delete">Eliminar</button>':'';
  if(isAdmin()){
@@ -120,6 +126,7 @@ function showStory(i){
  var audioSrc='';
  if(s.music_source==='audius'&&s.music_track_id&&/^[A-Za-z0-9_-]{2,100}$/.test(s.music_track_id))
    audioSrc='https://api.audius.co/v1/tracks/'+encodeURIComponent(s.music_track_id)+'/stream?app_name=BYAN_BZ_Digital_Hub';
+ else if(s.music_source==='openverse'&&s.music_external_url){try{var audioURL=new URL(s.music_external_url);if(audioURL.protocol==='https:'&&audioURL.href.length<=1200)audioSrc=audioURL.href}catch(err){}}
  else if(s.music_path)audioSrc=mediaURL(s.music_path);
  if(audioSrc){
    var current=new Audio(audioSrc);audio=current;
