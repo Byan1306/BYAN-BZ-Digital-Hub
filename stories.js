@@ -60,7 +60,7 @@ function viewerMarkup(){
  +'<div class="story-lyrics karaoke" id="story-view-lyrics" aria-live="off"></div><div class="story-textoverlay bottom" id="story-view-caption"></div><div class="story-emoji" id="story-view-emoji"></div>'
  +'<div class="story-vtop"><div class="story-bars" id="story-bars"></div><div class="story-vheader"><div class="story-avatar">BZ</div><div><strong>BYAN_BZ</strong><small id="story-view-time"></small></div><div class="spacer"></div><button type="button" class="story-icon-btn" id="story-mute" title="Silenciar música" aria-label="Silenciar música">♫</button><button type="button" class="story-icon-btn" id="story-close" aria-label="Cerrar">×</button></div></div>'
  +'<div class="story-controls"><button type="button" class="story-tap" id="story-prev" aria-label="Story anterior"></button><button type="button" class="story-tap" id="story-next" aria-label="Siguiente story"></button></div>'
- +'<div class="story-license-credit" id="story-credit"></div><div class="story-vfooter"><div class="story-sound-label" id="story-song"></div><div class="story-admin-actions" id="story-admin-actions"></div></div>'
+ +'<div class="story-youtube-embed" id="story-youtube-embed"></div><div class="story-license-credit" id="story-credit"></div><div class="story-vfooter"><div class="story-sound-label" id="story-song"></div><div class="story-admin-actions" id="story-admin-actions"></div></div>'
  +'</div>';
 }
 function openViewer(i){
@@ -88,6 +88,7 @@ function showStory(i){
  if(i<0){showStory(0);return}
  if(i>=active.length){removeLayer();return}
  stopPlayback();index=i;var s=active[i];
+ var ytHost=el('#story-youtube-embed');if(ytHost)ytHost.replaceChildren();
  var seconds=Math.min(3600,Math.max(5,Number(s.duration_seconds||8)));
  el('#story-bars').innerHTML=active.map(function(v,j){return '<span class="'+(j<i?'done':j===i?'playing':'')+'" style="--story-duration:'+seconds+'s"><i></i></span>'}).join('');
  var p=el('#story-main-photo');
@@ -102,7 +103,7 @@ function showStory(i){
  var lyricBox=el('#story-view-lyrics');
  var lyricLines=s.lyrics_enabled?parseStoryLyrics(s.lyrics_lrc):[];
  lyricBox.className='story-lyrics '+(['karaoke','clean','glass'].includes(s.lyrics_style)?s.lyrics_style:'karaoke');
- lyricBox.style.display=lyricLines.length?'block':'none';
+ lyricBox.style.display=lyricLines.length&&s.music_source!=='youtube'?'block':'none';
  function paintLyric(at){if(!lyricLines.length)return;
    var line=lyricLines.filter(function(x){return x.time<=at}).pop();
    lyricBox.textContent=line?line.text:'';
@@ -123,6 +124,22 @@ function showStory(i){
    el('#story-edit').onclick=function(){openComposer(s)};
    el('#story-delete').onclick=function(){deleteStory(s)};
    el('#story-highlight').onclick=function(){togglePinned(s)};
+ }
+ if(s.music_source==='youtube'&&/^[A-Za-z0-9_-]{11}$/.test(s.music_track_id||'')){
+    var from=Math.max(0,Math.min(7200,Number(s.music_start_sec)||0)),until=from+Math.min(120,Math.max(5,Number(s.duration_seconds)||20));
+    var qp=new URLSearchParams({playsinline:'1',controls:'1',rel:'0',start:String(Math.floor(from)),end:String(Math.floor(until))});
+    var frame=document.createElement('iframe');frame.src='https://www.youtube-nocookie.com/embed/'+s.music_track_id+'?'+qp.toString();
+    frame.title='Video oficial de YouTube: '+String(s.music_title||'');frame.width='320';frame.height='210';frame.allowFullscreen=true;
+    frame.allow='accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share';
+    frame.referrerPolicy='strict-origin-when-cross-origin';
+    var help=document.createElement('div');help.className='story-yt-label';help.textContent='Pulsa ▶ para escuchar el video en YouTube';
+    var link=document.createElement('a');link.href='https://www.youtube.com/watch?v='+s.music_track_id;link.target='_blank';link.rel='noopener noreferrer';link.textContent='Ver en YouTube ↗';
+    var next=document.createElement('button');next.type='button';next.textContent='Siguiente story →';next.onclick=function(){showStory(i+1)};
+    ytHost.append(help,frame,link,next);
+    var bar=el('#story-bars span.playing i');if(bar)bar.style.animationPlayState='paused';
+    el('#story-song').textContent='▶ '+(s.music_title||'Video')+' · YouTube';
+    el('#story-mute').style.display='none';
+    return;
  }
  var audioSrc='';
  if(s.music_source==='audius'&&s.music_track_id&&/^[A-Za-z0-9_-]{2,100}$/.test(s.music_track_id))
