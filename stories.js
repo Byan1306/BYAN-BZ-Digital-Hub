@@ -69,7 +69,7 @@ function openViewer(i){
  el('#story-close').onclick=removeLayer;
  el('#story-prev').onclick=function(){showStory(index-1)};
  el('#story-next').onclick=function(){showStory(index+1)};
- el('#story-mute').onclick=function(){if(!audio)return;audio.muted=!audio.muted;el('#story-mute').textContent=audio.muted?'♪':'♫';if(!audio.muted)audio.play().catch(function(){})};
+ el('#story-mute').onclick=function(){if(!audio)return;if(audio.paused){audio.muted=false;audio.play().then(function(){el('#story-mute').textContent='♫'}).catch(function(){el('#story-song').textContent='No se pudo reproducir esta canción.'});return}audio.muted=!audio.muted;el('#story-mute').textContent=audio.muted?'♪':'♫'};
  var startX=0;layer.addEventListener('touchstart',function(e){startX=e.touches[0].clientX},{passive:true});
  layer.addEventListener('touchend',function(e){var dx=e.changedTouches[0].clientX-startX;if(Math.abs(dx)>70)showStory(index+(dx<0?1:-1))},{passive:true});
  showStory(i);
