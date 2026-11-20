@@ -114,7 +114,8 @@ function showStory(i){
  if(s.music_source==='openverse'){
    credit.style.display='block';
    var creditText=document.createElement('span');creditText.textContent='♫ '+(s.music_attribution||s.music_artist+' — '+s.music_title)+' ('+String(s.music_license||'CC').toUpperCase()+')';credit.appendChild(creditText);
-   try{var origin=new URL(s.music_origin||'');if(origin.protocol==='https:'){var anchor=document.createElement('a');anchor.href=origin.href;anchor.target='_blank';anchor.rel='noopener noreferrer';anchor.textContent=' · Fuente y licencia ↗';credit.appendChild(anchor)}}catch(err){}
+   try{var origin=new URL(s.music_origin||'');if(origin.protocol==='https:'){var anchor=document.createElement('a');anchor.href=origin.href;anchor.target='_blank';anchor.rel='noopener noreferrer';anchor.textContent=' · Fuente ↗';credit.appendChild(anchor)}}catch(err){}
+   try{var licenseUrl=new URL(s.music_license_url||'');if(licenseUrl.protocol==='https:'){var licenseLink=document.createElement('a');licenseLink.href=licenseUrl.href;licenseLink.target='_blank';licenseLink.rel='noopener noreferrer';licenseLink.textContent=' · Licencia ↗';credit.appendChild(licenseLink)}}catch(err){}
  }else{credit.style.display='none'}
  var controls=el('#story-admin-actions');
  controls.innerHTML=isAdmin()?'<button type="button" id="story-edit">✎ Editar</button><button type="button" id="story-highlight">'+(s.pinned?'☆ Quitar destacada':'★ Destacar')+'</button><button type="button" id="story-delete">Eliminar</button>':'';
