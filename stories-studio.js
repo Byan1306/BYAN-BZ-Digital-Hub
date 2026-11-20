@@ -7,12 +7,14 @@ var fns={
   esc:function(v){return String(v==null?'':v).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]})},
   clamp:function(n,low,high){return Math.min(high,Math.max(low,Number(n)||0))},
   minutes:function(s){var n=Math.max(0,Math.floor(Number(s)||0));return Math.floor(n/60)+':'+String(n%60).padStart(2,'0')},
-  url:function(track){if(!track)return '';if(track.source==='audius'){return /^[a-zA-Z0-9_-]{2,100}$/.test(track.id)?'https://api.audius.co/v1/tracks/'+encodeURIComponent(track.id)+'/stream?app_name=BYAN_BZ_Digital_Hub':''}return track.path?opts.mediaURL(track.path):''}
+  url:function(track){if(!track)return '';if(track.source==='audius'){return /^[a-zA-Z0-9_-]{2,100}$/.test(track.id)?'https://api.audius.co/v1/tracks/'+encodeURIComponent(track.id)+'/stream?app_name=BYAN_BZ_Digital_Hub':''}if(track.source==='openverse')return safeHTTPS(track.audioUrl);return track.path?opts.mediaURL(track.path):''}
 };
 function $(x){return document.querySelector(x)}
 function timeNow(){return Date.now()}
 function safeLink(s){try{var url=new URL(s);return url.protocol==='https:'&&(url.hostname==='audius.co'||url.hostname.endsWith('.audius.co'))?url.href:''}catch(e){return ''}}
 function imgSrc(u){try{var v=new URL(u);return v.protocol==='https:'?v.href:''}catch(e){return ''}}
+function safeHTTPS(s){try{var u=new URL(s);return u.protocol==='https:'&&!u.username&&!u.password&&u.href.length<=1200?u.href:''}catch(e){return ''}}
+function appleEmbedURL(t){try{if(!t||!t.link)return '';var u=new URL(t.link);if(u.hostname!=='music.apple.com')return '';u.hostname='embed.music.apple.com';return u.href}catch(e){return ''}}
 function cleanup(){if(searchTimer){clearTimeout(searchTimer);searchTimer=null}if(searchAbort){searchAbort.abort();searchAbort=null}stopAudio();if(previewURL){URL.revokeObjectURL(previewURL);previewURL=null}}
 function stopAudio(){if(listenAudio){listenAudio.pause();listenAudio.removeAttribute('src');listenAudio.load();listenAudio=null}listenEndsAt=0}
 function markup(){
@@ -30,7 +32,7 @@ function markup(){
 }
 function initStoryState(editing){
  return {
-   editing:editing||null, panel:'photo', file:null, selected:null, catalog:'popular', searchTerm:'', searchArtist:'', results:[], library:[], loading:false,
+   editing:editing||null, panel:'photo', file:null, selected:null, catalog:'popular', searchTerm:'', searchArtist:'', results:[], library:[], loading:false, applePreview:null,licenseConfirmed:false,
    filter:editing&&editing.image_filter||'original', fit:editing&&editing.photo_fit||'cover',
    photoX:editing?Number(editing.photo_x):50,photoY:editing?Number(editing.photo_y):50,photoZoom:editing?Number(editing.photo_zoom):1,
    caption:editing&&editing.caption||'',captionColor:editing&&editing.caption_color||'#ffffff',captionPosition:editing&&editing.caption_position||'bottom',
@@ -69,7 +71,7 @@ function setPanel(panel){
  if(panel==='filters')html=filtersPanel();
  if(panel==='options')html=optionsPanel();
  $('#studio-panel-body').innerHTML=html||'';
- if(panel==='music'){paintResults(); if(S.catalog==='library') loadLibrary()}
+ if(panel==='music'){paintResults(); if(S.catalog==='library') loadLibrary();if(S.catalog==='openverse'&&S.searchTerm.length>=2)searchOpenverse();}
 }
 function photoPanel(){
  return '<div class="studio-panel"><h3>Encuadre de foto</h3><p class="studio-sub">Como en las Stories: elige cómo llenar el marco y arrastra la foto para recolocarla.</p>'
@@ -137,16 +139,18 @@ function optionsPanel(){
  +'</div>';
 }
 function musicPanel(){
- return '<div class="studio-panel"><h3>Buscar música ♫</h3>'
- +'<p class="studio-sub">Encuentra canciones populares y elige las que pueden sonar en tu story.</p>'
+ return '<div class="studio-panel"><h3>Tu música ♫</h3>'
+ +'<p class="studio-sub">Escucha canciones populares en el reproductor oficial o elige una pista cuyo uso esté permitido para tu Story.</p>'
  +'<div class="studio-catalog-tabs">'
- +'<button class="studio-source-tab'+(S.catalog==='popular'?' active':'')+'" type="button" data-studio-source="popular">🔥 Música popular</button>'
- +'<button class="studio-source-tab'+(S.catalog==='audius'?' active':'')+'" type="button" data-studio-source="audius">▶ Para mi Story</button>'
+ +'<button class="studio-source-tab'+(S.catalog==='popular'?' active':'')+'" type="button" data-studio-source="popular">🔥 Popular</button>'
+ +'<button class="studio-source-tab'+(S.catalog==='openverse'?' active':'')+'" type="button" data-studio-source="openverse">✓ Licencia CC</button>'
+ +'<button class="studio-source-tab'+(S.catalog==='audius'?' active':'')+'" type="button" data-studio-source="audius">▶ Audius</button>'
  +'<button class="studio-source-tab'+(S.catalog==='library'?' active':'')+'" type="button" data-studio-source="library">♫ Mis audios</button>'
  +'</div>'
  +'<label class="studio-music-query"><input autocomplete="off" type="search" id="studio-search" placeholder="Nombre de la canción o artista" value="'+fns.esc(S.searchTerm)+'"></label>'
- +'<p class="studio-source-note">'+(S.catalog==='popular'?'Buscador de canciones conocidas. Puedes abrir el tema en Apple Music o encontrar versiones disponibles para Story. Los resultados populares no incluyen permiso de uso audiovisual.':S.catalog==='audius'?'Pistas con reproducción disponible en Audius. Escucha y verifica la grabación y sus permisos antes de usarla sobre una foto.': 'Audios de tu biblioteca que puedes usar y reutilizar.')+'</p>'
- +'<div class="studio-results" id="studio-results"><div class="studio-message">Escribe el nombre de la canción para buscar.</div></div>'
+ +'<p class="studio-source-note">'+(S.catalog==='popular'?'Busca éxitos conocidos y escúchalos con Apple Music (vista previa oficial, habitualmente 30 segundos). La escucha no autoriza poner la canción en una foto.':S.catalog==='openverse'?'Música con licencia Creative Commons CC0, dominio público o CC BY. Revisa siempre los permisos en la fuente original; el buscador no los verifica.':S.catalog==='audius'?'Escucha artistas de Audius. Verifica los derechos de cada pista antes de sincronizarla con una foto.':'Tu propia música autorizada, lista para reproducir y reutilizar.')+'</p>'
+ +'<div class="studio-results" id="studio-results"><div class="studio-message">Escribe el nombre de una canción o artista.</div></div>'
+ +'<div id="studio-apple-preview"></div>'
  +'<div id="studio-selected-box">'+selectedMarkup()+'</div>'
  +'<details class="studio-uploads"><summary>＋ Agregar mi propio audio a la biblioteca</summary>'
  +'<div><label>Archivo MP3, WAV, OGG o M4A (máximo 12 MB)<input type="file" id="studio-upload-audio" accept=".mp3,.ogg,.wav,.m4a,audio/mpeg,audio/mp4,audio/ogg,audio/wav"></label>'
@@ -154,7 +158,7 @@ function musicPanel(){
  +'<label>Artista<input id="studio-upload-artist" placeholder="Artista"></label>'
  +'<label class="studio-check"><input id="studio-rights" type="checkbox"> Confirmo que tengo permiso para publicar este audio</label>'
  +'<button class="studio-action" id="studio-upload-track" type="button">Guardar en mi biblioteca</button></div></details>'
- +'<p class="studio-copyright">La música popular se muestra como referencia del catálogo de Apple Music; no se copia ni reproduce como soundtrack de tu Story. Puedes abrirla en Apple Music o buscar versiones reproducibles en Audius. Los audios propios deben contar con autorización de publicación.</p>'
+ +'<p class="studio-copyright">Apple Music: reproductor oficial solo para escuchar; no se incorpora su audio a las Stories. Openverse: verifica cada licencia y atribuye al autor. Ni Apple Music ni Openverse garantizan permisos sobre todas las grabaciones.</p>'
  +'</div>';
 }
 function selectedMarkup(){
@@ -165,10 +169,18 @@ function selectedMarkup(){
  S.start=fns.clamp(S.start,0,maxStart);
  var maxClip=Math.max(5,Math.min(120,dur?dur-S.start:120));
  S.clip=fns.clamp(S.clip,5,maxClip);
+ var openLic=t.source==='openverse';
+ var licenseLine=openLic?'<div class="studio-search-hint"><strong>Licencia declarada: '+fns.esc(t.license.toUpperCase())+'</strong>'
+  +'<div class="studio-note">Crédito: '+fns.esc(t.attribution||t.artist+' — '+t.title)+'</div>'
+  +(safeHTTPS(t.licenseUrl)?'<a href="'+fns.esc(safeHTTPS(t.licenseUrl))+'" target="_blank" rel="noopener noreferrer">Leer licencia ↗</a> ':'')
+  +(safeHTTPS(t.link)?'<a href="'+fns.esc(safeHTTPS(t.link))+'" target="_blank" rel="noopener noreferrer">Ver origen ↗</a>':'')
+  +'<label class="studio-check"><input type="checkbox" id="studio-license-confirm"'+(S.licenseConfirmed?' checked':'')+'> Revisé la fuente original y confirmo que puedo usar esta grabación junto a mi fotografía.</label></div>':'';
+ var trackLink=t.source==='audius'?safeLink(t.link):t.source==='openverse'?safeHTTPS(t.link):'';
  return '<div class="studio-track-selected"><div class="studio-flex"><div style="min-width:0"><strong>♫ '+fns.esc(t.title)+'</strong><small>'+fns.esc(t.artist||'Artista')+' · '+(dur?fns.minutes(dur):'Duración sin confirmar')+'</small></div>'
  +'<button class="studio-ghost" id="studio-clear-song" type="button" title="Quitar canción">✕</button></div>'
  +'<div class="studio-preview-controls"><button id="studio-listen" class="studio-action secondary" type="button">▶ Escuchar</button>'
- +(t.link?'<a href="'+fns.esc(safeLink(t.link))+'" target="_blank" rel="noopener noreferrer" class="studio-note">Ver en Audius ↗</a>':'')+'</div>'
+ +(trackLink?'<a href="'+fns.esc(trackLink)+'" target="_blank" rel="noopener noreferrer" class="studio-note">Ver fuente original ↗</a>':'')+'</div>'
+ +licenseLine
  +'<div class="studio-mode"><button type="button" data-studio-mode="full" class="'+(S.mode==='full'?'active':'')+'">Toda la canción</button>'
  +'<button type="button" data-studio-mode="clip" class="'+(S.mode==='clip'?'active':'')+'">Elegir segundos</button></div>'
  +'<div class="studio-timeline">'
@@ -178,55 +190,66 @@ function selectedMarkup(){
  +'<label>Segundos del fragmento (5–120)<input type="range" id="studio-clip" min="5" max="'+maxClip+'" step="1" value="'+S.clip+'"></label>'
  +'<span class="studio-note">Se escuchará desde '+fns.minutes(S.start)+' hasta '+fns.minutes(S.start+S.clip)+'.</span>'
  :'<div class="studio-time-labels"><span>Reproducción completa</span><span class="studio-time-value">'+(dur?fns.minutes(dur):'Sin duración')+'</span></div>'
- +'<p class="studio-note">La story permanecerá mientras suene toda la canción. Puedes pasar a la siguiente cuando quieras.</p>')
- +'</div></div>';
+ +'<p class="studio-note">La story seguirá visible mientras se reproduce la canción (hasta 60 minutos).</p>')+'</div></div>';
 }
 function updateSelectionMarkup(){
  var box=$('#studio-selected-box');if(box)box.innerHTML=selectedMarkup();
 }
+function showApplePreview(){
+ var root=$('#studio-apple-preview');if(!root)return;
+ if(S.catalog!=='popular'||!S.applePreview){root.replaceChildren();return}
+ var embed=appleEmbedURL(S.applePreview);
+ if(!embed){root.textContent='Vista previa no disponible para esta canción. Puedes abrirla en Apple Music.';return}
+ var section=document.createElement('div');section.className='studio-official-player';
+ var title=document.createElement('div');title.className='studio-official-header';title.textContent='▶ Escucha oficial: '+S.applePreview.title+' — '+S.applePreview.artist;
+ var frame=document.createElement('iframe');frame.src=embed;frame.title='Reproductor oficial Apple Music';frame.loading='lazy';
+ frame.width='100%';frame.height='150';frame.style.cssText='width:100%;height:150px;border:0;border-radius:13px;background:#1c1b29';
+ frame.setAttribute('allow','autoplay *; encrypted-media *; clipboard-write');
+ frame.referrerPolicy='strict-origin-when-cross-origin';
+ var note=document.createElement('p');note.className='studio-note';
+ note.textContent='Apple Music permite preescuchar mediante su reproductor oficial. Para musicalizar una Story necesitas una licencia independiente.';
+ section.append(title,frame,note);root.replaceChildren(section);
+}
+
 function renderSearchMessage(msg){
  var target=$('#studio-results');if(target)target.innerHTML='<div class="studio-message">'+fns.esc(msg)+'</div>';
 }
 function paintResults(){
  var box=$('#studio-results');if(!box||!S||S.panel!=='music')return;
- if(S.loading){renderSearchMessage('Buscando canciones…');return}
+ if(S.loading){renderSearchMessage('Buscando canciones…');showApplePreview();return}
  var q=S.searchTerm.trim();
  if(S.catalog!=='library'&&q.length<2){
    box.innerHTML='<div class="studio-message">Busca una canción o artista. Por ejemplo:</div><div class="studio-suggest">'
-     +['Bad Bunny','Taylor Swift','Karol G','Feid','The Weeknd'].map(function(t){
-       return '<button type="button" data-studio-suggest="'+fns.esc(t)+'">'+fns.esc(t)+'</button>';
-     }).join('')+'</div>';
-   return;
+    +['Bad Bunny','Taylor Swift','Karol G','Feid','The Weeknd'].map(function(t){return '<button type="button" data-studio-suggest="'+fns.esc(t)+'">'+fns.esc(t)+'</button>'}).join('')+'</div>';
+   showApplePreview();return;
  }
  var list=S.results||[];
- if(!list.length){renderSearchMessage(S.catalog==='library'?'Aún no tienes canciones en tu biblioteca. Agrégalas abajo.':S.catalog==='popular'?'No encontramos esa canción en el catálogo consultado. Prueba título o artista, o busca en «Para mi Story».':'No hay pistas reproducibles con ese nombre. Prueba otra búsqueda o agrega tu audio autorizado.');return}
+ if(!list.length){renderSearchMessage(S.catalog==='library'?'No hay canciones en tu biblioteca. Puedes subir las tuyas abajo.':S.catalog==='popular'?'No se encontró la canción en Apple Music. Prueba otro artista.':S.catalog==='openverse'?'No hay resultados con CC0, dominio público o CC BY. Prueba un género o utiliza un audio propio.':'No encontramos pistas disponibles en Audius. Prueba otro nombre.');showApplePreview();return}
  if(S.catalog==='popular'){
-   box.innerHTML='<div class="studio-section-count"><span>'+list.length+' canciones encontradas</span><span>Apple Music / referencias</span></div>'
+   box.innerHTML='<div class="studio-section-count"><span>'+list.length+' canciones encontradas</span><span>Reproductor oficial Apple Music</span></div>'
    +list.map(function(t,i){
-     var link=t.link||'',site=t.provider==='MusicBrainz'?'Ficha musical ↗':'Ver en Apple Music ↗';
-     var art=imgSrc(t.artwork);
-     var url=link&&/^https:\/\//.test(link)?link:'';
-     var yt='https://www.youtube.com/results?search_query='+encodeURIComponent([t.artist,t.title].filter(Boolean).join(' '));
-     return '<div class="studio-song popular" role="group" aria-label="'+fns.esc(t.title)+' — '+fns.esc(t.artist)+'">'
-       +(art?'<img class="studio-art" loading="lazy" alt="" src="'+fns.esc(art)+'">':'<span class="studio-art" aria-hidden="true" style="display:grid;place-items:center">♫</span>')
-       +'<div class="studio-song-main"><strong class="studio-song-title">'+fns.esc(t.title)+'</strong>'
-       +'<span class="studio-song-artist">'+fns.esc(t.artist||'Artista')+'</span>'
-       +'<span class="studio-song-meta">'+fns.esc(t.album||t.provider||'')+'</span>'
-       +'<span class="studio-song-pill discovery">Referencia · sin licencia para Story</span></div>'
-       +'<div class="studio-popular-actions"><button type="button" data-find-playable="'+i+'" title="Encontrar versiones que puedan sonar en tu story">Buscar versión ▶</button>'
-       +(url?'<a href="'+fns.esc(url)+'" target="_blank" rel="noopener noreferrer">'+site+'</a>':'')
+      var art=imgSrc(t.artwork);
+      var url=safeCatalogLink(t.link),yt='https://www.youtube.com/results?search_query='+encodeURIComponent([t.artist,t.title].filter(Boolean).join(' '));
+      return '<div class="studio-song popular" role="group">'
+       +(art?'<img class="studio-art" loading="lazy" alt="" src="'+fns.esc(art)+'">':'<span class="studio-art" style="display:grid;place-items:center">♫</span>')
+       +'<div class="studio-song-main"><strong class="studio-song-title">'+fns.esc(t.title)+'</strong><span class="studio-song-artist">'+fns.esc(t.artist)+'</span>'
+       +'<span class="studio-song-meta">'+fns.esc(t.album||'')+'</span><span class="studio-song-pill discovery">Escucha oficial · no publicable en Story</span></div>'
+       +'<div class="studio-popular-actions"><button type="button" data-apple-play="'+i+'">▶ Escuchar</button><button type="button" data-find-cc="'+i+'">Buscar libre</button><button type="button" data-find-playable="'+i+'">Ver Audius</button>'
+       +(url?'<a href="'+fns.esc(url)+'" target="_blank" rel="noopener noreferrer">Apple Music ↗</a>':'')
        +'<a href="'+yt+'" target="_blank" rel="noopener noreferrer">YouTube ↗</a></div></div>';
    }).join('');
-   return;
+   showApplePreview();return;
  }
- box.innerHTML='<div class="studio-section-count"><span>'+list.length+' pistas</span><span>▶ Reproducibles</span></div>'
+ box.innerHTML='<div class="studio-section-count"><span>'+list.length+' pistas</span><span>'+(S.catalog==='openverse'?'Licencia declarada: CC0 / CC BY / PD':'Reproducción disponible')+'</span></div>'
  +list.map(function(t,i){
-  var art=imgSrc(t.artwork);
-  return '<button type="button" class="studio-song'+(S.selected&&t.source===S.selected.source&&t.id===S.selected.id?' selected':'')+'" data-studio-song="'+i+'">'
+   var art=imgSrc(t.artwork);
+   return '<button type="button" class="studio-song'+(S.selected&&t.source===S.selected.source&&t.id===S.selected.id?' selected':'')+'" data-studio-song="'+i+'">'
    +(art?'<img alt="" loading="lazy" class="studio-art" src="'+fns.esc(art)+'">':'<span class="studio-art" style="display:grid;place-items:center;font-size:22px">♫</span>')
-   +'<span class="studio-song-main"><span class="studio-song-title">'+fns.esc(t.title)+'</span><span class="studio-song-artist">'+fns.esc(t.artist||'Artista')+'</span><span class="studio-song-pill can-use">▶ Reproducción disponible</span></span>'
+   +'<span class="studio-song-main"><span class="studio-song-title">'+fns.esc(t.title)+'</span><span class="studio-song-artist">'+fns.esc(t.artist||'Artista')+'</span>'
+   +'<span class="studio-song-pill can-use">'+(S.catalog==='openverse'?'Licencia '+fns.esc(t.license.toUpperCase())+' · verificar':'▶ Escuchar')+'</span></span>'
    +'<span class="studio-song-time">'+(t.duration?fns.minutes(t.duration):'♫')+'</span></button>'
  }).join('');
+ showApplePreview();
 }
 function updateResultsFromLibrary(){
  if(!S)return;
@@ -285,6 +308,42 @@ async function searchPopular(){
  }
 }
 
+async function searchOpenverse(){
+ if(!S||S.catalog!=='openverse')return;
+ if(searchAbort)searchAbort.abort();
+ var q=S.searchTerm.trim();if(q.length<2){S.results=[];S.loading=false;paintResults();return}
+ var token=searchAbort=new AbortController();S.loading=true;paintResults();
+ try{
+  var url='https://api.openverse.org/v1/audio/?q='+encodeURIComponent(q)+'&license=cc0,by,pdm&category=music&page_size=30';
+  var response=await fetch(url,{signal:token.signal});
+  if(!response.ok)throw Error('Openverse temporalmente no disponible (HTTP '+response.status+')');
+  var body=await response.json();
+  if(token!==searchAbort||!S||S.catalog!=='openverse')return;
+  if(!Array.isArray(body.results))throw Error('La respuesta de Openverse no es válida');
+  var seen=new Set();
+  S.results=body.results.filter(function(t){
+    if(!t||!['cc0','by','pdm'].includes(String(t.license||'').toLowerCase()))return false;
+    var u=safeHTTPS(t.url),origin=safeHTTPS(t.foreign_landing_url);
+    if(!u||!origin||seen.has(u)||t.category&&t.category!=='music')return false;
+    seen.add(u);return true;
+  }).map(function(t){
+    var n=Number(t.duration)||0; /* Openverse supplies milliseconds in the indexed audio API */
+    var seconds=n>7200?Math.round(n/1000):Math.round(n);
+    var l=String(t.license||'').toLowerCase();
+    var licLink=safeHTTPS(t.license_url)||'';
+    return {source:'openverse',id:String(t.id||''),title:String(t.title||'Sin título').slice(0,100),
+      artist:String(t.creator||'Autor sin identificar').slice(0,100),
+      duration:seconds>=5&&seconds<=7200?seconds:0,
+      artwork:String(t.thumbnail||''),audioUrl:safeHTTPS(t.url),link:safeHTTPS(t.foreign_landing_url),
+      license:l,licenseUrl:licLink,attribution:String(t.attribution||((t.title||'Audio')+' — '+(t.creator||'Autor')+' · '+l.toUpperCase())).slice(0,450)};
+  });
+  S.loading=false;paintResults();
+ }catch(e){
+  if(e.name==='AbortError')return;
+  if(token!==searchAbort||!S)return;
+  S.results=[];S.loading=false;renderSearchMessage('Openverse no está disponible: '+e.message+'. Puedes probar más tarde o usar tu biblioteca.');
+ }
+}
 async function searchAudius(){
  if(!S||S.catalog!=='audius')return;
  if(searchAbort)searchAbort.abort();
@@ -336,9 +395,10 @@ function setSource(source){
  setPanel('music');
  if(source==='audius'&&S.searchTerm.length>=2)searchAudius();
  if(source==='popular'&&S.searchTerm.length>=2)searchPopular();
+ if(source==='openverse'&&S.searchTerm.length>=2)searchOpenverse();
 }
 function onSongSelected(i){
- var t=S.results[i];if(!t)return;S.selected=t;S.start=0;S.clip=Math.min(15,Math.max(5,t.duration||15));S.mode='clip';stopAudio();setPanel('music');
+ var t=S.results[i];if(!t||t.source==='popular')return;S.selected=t;S.start=0;S.clip=Math.min(15,Math.max(5,t.duration||15));S.mode='clip';S.licenseConfirmed=false;stopAudio();setPanel('music');
 }
 function listen(){
  if(!S||!S.selected)return;
