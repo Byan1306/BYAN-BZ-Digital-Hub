@@ -79,3 +79,18 @@ Una canción de Apple Music no se reproduce ni se extrae como audio; las vistas 
 **Uso:** abre [BYAN_BZ Digital Hub](https://byan1306.github.io/BYAN-BZ-Digital-Hub/), inicia sesión → **Mis Stories → Crear story → Música**. Prueba un artista famoso en «Música popular», toca «Buscar versión» y, si aparece una pista apropiada en Audius, escúchala y comprueba tus permisos antes de publicarla.
 
 **Notas operativas:** El servicio gratuito de búsquedas puede aplicar límites de peticiones, estar temporalmente caído o devolver un catálogo distinto según la región. El uso de canciones comerciales de terceros en stories requiere un proveedor de música específicamente licenciado. No se ha contratado ningún servicio de pago. El buscador ya fue comprobado mediante revisión de código y sintaxis; la búsqueda en navegador y la reproducción requieren prueba real.
+
+
+## 🎧 Escuchar música popular y publicar música de licencia abierta (v4)
+
+Se añadió un panel de música con **cuatro fuentes** al editor de Stories:
+- **Popular:** búsqueda en el catálogo público iTunes/Apple Music. Al pulsar «▶ Escuchar» aparece un **reproductor oficial visible de Apple Music** dentro del editor. Apple indica que, sin iniciar sesión, las vistas previas suelen durar 30 segundos. También puedes abrir Apple Music o YouTube mediante enlaces. **El audio de Apple Music NO se inserta en las Stories** (el reproductor no concede sincronización audiovisual).
+- **Licencia CC:** busca en la [API Openverse](https://api.openverse.org/v1/) por título, artista o género. Muestra únicamente pistas indexadas como CC0, dominio público (PDM) o CC BY. Permite escuchar la pista en un reproductor de audio y seleccionar «Toda la canción» o «Elegir segundos». **Openverse no verifica los derechos de cada archivo**. Antes de publicar, el propietario debe abrir su fuente y licencia originales y confirmar los permisos. El sitio guarda los créditos, la licencia y enlaces, y los muestra en la Story.
+- **Audius:** búsqueda de pistas reproducibles en Audius, también con comprobación de derechos del artista y condiciones de la pista.
+- **Mis audios:** biblioteca privada de archivos propios/autorizados que se suben a Supabase.
+
+**Ninguna de estas fuentes reproduce sin permiso éxitos comerciales sobre fotografías.** Para ofrecer música comercial directamente como soundtrack de las Stories necesitamos un acuerdo específico con un licenciante especializado. No hay claves privadas de servicios musicales en el código y no se han contratado servicios de pago.
+
+**Uso:** iniciar sesión → Mis Stories → Crear Story → Música → Popular → «▶ Escuchar» para usar el reproductor de Apple Music. Para publicar música libre: cambiar a «✓ Licencia CC», buscar, escuchar, abrir la fuente/licencia y marcar la confirmación. La reproducción efectiva depende de la disponibilidad, permisos y restricciones del servidor que aloja el audio.
+
+**Estado de verificación:** archivos de GitHub y JavaScript revisados; políticas SQL confirman que solo el propietario puede publicar. La reproducción de Apple Music y cada URL de Openverse debe verificarse mediante un navegador conectado.
