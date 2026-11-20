@@ -196,3 +196,21 @@
 .studio-import-links{display:flex;flex-wrap:wrap;gap:7px}
 .studio-import-links button{font-size:11px;padding:9px 10px;flex:1 1 auto}
 @media(max-width:690px){.studio-import-music{padding:12px}.studio-import-links button{font-size:10px}}
+
+
+/* Licencias para éxitos comerciales: sin reproductores de video ni acceso automático */
+.studio-license-workflow{
+  margin:14px 0;background:linear-gradient(135deg,#2c213e,#191624);
+  border:1px solid #9973cd8f;border-radius:15px;padding:14px;
+  box-shadow:0 14px 33px #09031545;
+}
+.studio-license-workflow>strong{font-size:13px;color:#f3e6ff;line-height:1.35;display:block}
+.studio-license-workflow>p{font-size:11px;line-height:1.5;color:#bdb0ce;margin:9px 0 12px}
+.studio-license-workflow .studio-import-links{gap:6px}
+.studio-license-workflow .studio-action{font-size:11px;min-height:34px;white-space:normal}
+.studio-license-workflow textarea{box-sizing:border-box;margin-top:10px;width:100%;resize:vertical;
+ background:#11101c;border:1px solid #504667;color:#d7c9e6;border-radius:10px;
+ padding:10px;font:11px/1.5 inherit;min-height:116px}
+.studio-uploads label{line-height:1.35}
+.studio-uploads #studio-rights-reference{font-size:12px}
+@media(max-width:700px){.studio-license-workflow{padding:11px}.studio-license-workflow .studio-action{font-size:10px}}
