@@ -30,7 +30,7 @@ function markup(){
 }
 function initStoryState(editing){
  return {
-   editing:editing||null, panel:'photo', file:null, selected:null, catalog:'popular', searchTerm:'', results:[], library:[], loading:false,
+   editing:editing||null, panel:'photo', file:null, selected:null, catalog:'popular', searchTerm:'', searchArtist:'', results:[], library:[], loading:false,
    filter:editing&&editing.image_filter||'original', fit:editing&&editing.photo_fit||'cover',
    photoX:editing?Number(editing.photo_x):50,photoY:editing?Number(editing.photo_y):50,photoZoom:editing?Number(editing.photo_zoom):1,
    caption:editing&&editing.caption||'',captionColor:editing&&editing.caption_color||'#ffffff',captionPosition:editing&&editing.caption_position||'bottom',
@@ -145,7 +145,7 @@ function musicPanel(){
  +'<button class="studio-source-tab'+(S.catalog==='library'?' active':'')+'" type="button" data-studio-source="library">♫ Mis audios</button>'
  +'</div>'
  +'<label class="studio-music-query"><input autocomplete="off" type="search" id="studio-search" placeholder="Nombre de la canción o artista" value="'+fns.esc(S.searchTerm)+'"></label>'
- +'<p class="studio-source-note">'+(S.catalog==='popular'?'Buscador de canciones conocidas. Puedes abrir el tema en Apple Music o encontrar versiones disponibles para Story. Los resultados populares no incluyen permiso de uso audiovisual.':S.catalog==='audius'?'Pistas reproducibles desde Audius. Comprueba si son la grabación original, una versión o un remix antes de publicarlas.': 'Audios de tu biblioteca que puedes usar y reutilizar.')+'</p>'
+ +'<p class="studio-source-note">'+(S.catalog==='popular'?'Buscador de canciones conocidas. Puedes abrir el tema en Apple Music o encontrar versiones disponibles para Story. Los resultados populares no incluyen permiso de uso audiovisual.':S.catalog==='audius'?'Pistas con reproducción disponible en Audius. Escucha y verifica la grabación y sus permisos antes de usarla sobre una foto.': 'Audios de tu biblioteca que puedes usar y reutilizar.')+'</p>'
  +'<div class="studio-results" id="studio-results"><div class="studio-message">Escribe el nombre de la canción para buscar.</div></div>'
  +'<div id="studio-selected-box">'+selectedMarkup()+'</div>'
  +'<details class="studio-uploads"><summary>＋ Agregar mi propio audio a la biblioteca</summary>'
@@ -224,7 +224,7 @@ function paintResults(){
   var art=imgSrc(t.artwork);
   return '<button type="button" class="studio-song'+(S.selected&&t.source===S.selected.source&&t.id===S.selected.id?' selected':'')+'" data-studio-song="'+i+'">'
    +(art?'<img alt="" loading="lazy" class="studio-art" src="'+fns.esc(art)+'">':'<span class="studio-art" style="display:grid;place-items:center;font-size:22px">♫</span>')
-   +'<span class="studio-song-main"><span class="studio-song-title">'+fns.esc(t.title)+'</span><span class="studio-song-artist">'+fns.esc(t.artist||'Artista')+'</span><span class="studio-song-pill can-use">▶ Puede sonar en Story</span></span>'
+   +'<span class="studio-song-main"><span class="studio-song-title">'+fns.esc(t.title)+'</span><span class="studio-song-artist">'+fns.esc(t.artist||'Artista')+'</span><span class="studio-song-pill can-use">▶ Reproducción disponible</span></span>'
    +'<span class="studio-song-time">'+(t.duration?fns.minutes(t.duration):'♫')+'</span></button>'
  }).join('');
 }
@@ -288,28 +288,45 @@ async function searchPopular(){
 async function searchAudius(){
  if(!S||S.catalog!=='audius')return;
  if(searchAbort)searchAbort.abort();
- var q=S.searchTerm.trim();if(q.length<2){S.results=[];S.loading=false;paintResults();return}
+ var q=S.searchTerm.trim();
+ if(q.length<2){S.results=[];S.loading=false;paintResults();return}
  searchAbort=new AbortController();var token=searchAbort;
  S.loading=true;paintResults();
  try{
-  var url='https://api.audius.co/v1/tracks/search?query='+encodeURIComponent(q)+'&limit=16&app_name=BYAN_BZ_Digital_Hub';
+  var url='https://api.audius.co/v1/tracks/search?query='+encodeURIComponent(q)+'&limit=35&sort_method=relevant&app_name=BYAN_BZ_Digital_Hub';
   var response=await fetch(url,{signal:token.signal});
   if(!response.ok)throw Error('Servidor musical temporalmente no disponible (HTTP '+response.status+')');
-  var json=await response.json();if(!S||token!==searchAbort)return;
+  var json=await response.json();
+  if(!S||token!==searchAbort||S.catalog!=='audius')return;
   var tracks=Array.isArray(json.data)?json.data:[];
+  var seen=new Set();
+  function norm(x){return String(x||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z0-9]+/g,' ').trim()}
+  var normalized=norm(q),requestedArtist=norm(S.searchArtist);
+  var words=normalized.split(/\s+/).filter(function(w){return w.length>1});
   S.results=tracks.filter(function(t){
-    return t&&/^[A-Za-z0-9_-]{2,100}$/.test(String(t.id||''))&&t.is_streamable!==false&&(!t.access||t.access.stream!==false)&&!t.is_delete;
+    if(!t||!/^[A-Za-z0-9_-]{2,100}$/.test(String(t.id||''))||t.is_streamable===false||(t.access&&t.access.stream===false)||t.is_delete)return false;
+    if(seen.has(t.id))return false;seen.add(t.id);return true;
   }).map(function(t){
-    return {source:'audius',id:String(t.id),title:String(t.title||'Sin título').slice(0,100),
-     artist:String((t.user&&t.user.name)||'Artista').slice(0,100),
-     duration:Math.max(0,Number(t.duration)||0),
-     artwork:String((t.artwork&&(t.artwork['150x150']||t.artwork['480x480']))||''),
-     link:safeLink(t.permalink||'')};
-  });
+    var title=String(t.title||'Sin título'),artist=String((t.user&&t.user.name)||'Artista');
+    var nt=norm(title),na=norm(artist),score=0;
+    if(nt===normalized)score+=95;
+    if(nt.startsWith(normalized))score+=55;
+    if(nt.includes(normalized))score+=35;
+    if(na.includes(normalized))score+=25;
+    words.forEach(function(w){if(nt.includes(w))score+=8;if(na.includes(w))score+=4});
+    if(requestedArtist&&na.includes(requestedArtist))score+=40;
+    score+=Math.min(12,Math.log10(Math.max(1,Number(t.play_count)||1))*2);
+    return {source:'audius',id:String(t.id),title:title.slice(0,100),
+      artist:artist.slice(0,100),duration:Math.max(0,Number(t.duration)||0),score:score,
+      artwork:String((t.artwork&&(t.artwork['150x150']||t.artwork['480x480']))||''),
+      link:safeLink(t.permalink||'')};
+  }).sort(function(a,b){return b.score-a.score}).slice(0,35);
   S.loading=false;paintResults();
  }catch(e){
   if(e.name==='AbortError')return;
-  if(!S)return;S.results=[];S.loading=false;renderSearchMessage('No se pudo buscar en Audius: '+e.message+'. Prueba otra vez o usa Mis canciones.');
+  if(!S||token!==searchAbort)return;
+  S.results=[];S.loading=false;
+  renderSearchMessage('No se pudo buscar en Audius: '+e.message+'. Prueba otra vez o usa Mis audios.');
  }
 }
 function setSource(source){
@@ -403,7 +420,7 @@ function attachEvents(){
   if(t.dataset.studioSource){setSource(t.dataset.studioSource);return}
   if(t.dataset.studioSong!==undefined){onSongSelected(Number(t.dataset.studioSong));return}
   if(t.dataset.studioSuggest){S.searchTerm=t.dataset.studioSuggest;setPanel('music');if(S.catalog==='popular')searchPopular();else if(S.catalog==='audius')searchAudius();return}
-  if(t.dataset.findPlayable!==undefined){var hit=S.results[Number(t.dataset.findPlayable)];if(!hit)return;S.searchTerm=hit.artist+' '+hit.title;setSource('audius');return}
+  if(t.dataset.findPlayable!==undefined){var hit=S.results[Number(t.dataset.findPlayable)];if(!hit)return;S.searchTerm=hit.title;S.searchArtist=hit.artist;setSource('audius');return}
   if(t.id==='studio-clear-song'){S.selected=null;S.mode='clip';S.start=0;stopAudio();setPanel('music');return}
   if(t.dataset.studioMode){S.mode=t.dataset.studioMode;S.start=S.mode==='full'?0:S.start;stopAudio();updateSelectionMarkup();return}
   if(t.id==='studio-listen'){listen();return}
@@ -437,7 +454,7 @@ function attachEvents(){
   if(['studio-lyrics-enabled','studio-lyrics-lrc','studio-lyrics-style'].includes(t.id)){preview();return}
   if(t.id==='studio-no-music-duration')S.noMusicDuration=fns.clamp(t.value,5,20);
   if(t.id==='studio-search'){
-   S.searchTerm=t.value;
+   S.searchTerm=t.value;S.searchArtist='';
    if(S.catalog==='library')updateResultsFromLibrary();
    else{
     if(searchTimer)clearTimeout(searchTimer);
