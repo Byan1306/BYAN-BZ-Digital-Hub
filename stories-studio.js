@@ -322,11 +322,11 @@ function attachEvents(){
    }
    return;
   }
-  if(t.id==='studio-start'){S.start=fns.clamp(t.value,0,7200);stopAudio();updateSelectionMarkup();return}
-  if(t.id==='studio-clip'){S.clip=fns.clamp(t.value,5,120);stopAudio();updateSelectionMarkup();return}
+  if(t.id==='studio-start'){S.start=fns.clamp(t.value,0,7200);stopAudio();var label=$('#studio-start-label');if(label)label.textContent=fns.minutes(S.start);return}
+  if(t.id==='studio-clip'){S.clip=fns.clamp(t.value,5,120);stopAudio();var label=$('#studio-clip-label');if(label)label.textContent=S.clip+' s';return}
  });
  root.addEventListener('change',function(e){
-   var t=e.target;if(t.id==='studio-photo-file'){setPhoto(t.files[0])}
+   var t=e.target;if(t.id==='studio-photo-file'){setPhoto(t.files[0])}if(t.id==='studio-start'||t.id==='studio-clip'){updateSelectionMarkup()}
  });
  var canvas=$('#studio-canvas'),pointer=null;
  canvas.addEventListener('pointerdown',function(e){if(!S.file&&!S.editing)return;pointer={x:e.clientX,y:e.clientY,sx:S.photoX,sy:S.photoY};try{canvas.setPointerCapture(e.pointerId)}catch(err){}});
@@ -396,8 +396,8 @@ async function publish(){
 }
 function open(editing,options){
  if(!options.isAdmin())return;
- opts=options;
  options.mount('compose',markup());
+ opts=options;
  S=initStoryState(editing);
  if(editing&&(editing.music_path||editing.music_track_id)){
   S.selected={source:editing.music_source||'upload',
