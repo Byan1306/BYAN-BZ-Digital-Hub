@@ -96,16 +96,21 @@ Se añadió un panel de música con **cuatro fuentes** al editor de Stories:
 **Estado de verificación:** archivos de GitHub y JavaScript revisados; políticas SQL confirman que solo el propietario puede publicar. La reproducción de Apple Music y cada URL de Openverse debe verificarse mediante un navegador conectado.
 
 
-## ▶ YouTube en Stories (video oficial visible)
+## 🎵 Música para Stories — sin YouTube (v5)
 
-Nueva fuente YouTube dentro del editor de Stories:
+**YouTube fue retirado del editor de Stories** porque su reproductor visible no coincide con el diseño fotográfico de BYAN_BZ.
 
-1. **Mis Stories → Crear Story → Música → YouTube**.
-2. Escribe la canción y pulsa **Buscar en YouTube**. Se abre la búsqueda oficial en otra pestaña.
-3. Copia la URL de un video de YouTube (watch, youtu.be, Shorts o live), pégala en el editor y pulsa **Vincular video**.
-4. Selecciona el segundo inicial y la longitud del fragmento (entre 5 y 120 segundos); usa el reproductor oficial para previsualizarlo.
-5. Publica. En la Story aparece un **video de YouTube integrado y visible**, sobre la fotografía, con su identificación de origen y un botón para abrirlo en YouTube. Los visitantes deben pulsar ▶ para escucharlo, porque los navegadores restringen el autoplay.
+### Fuentes gratuitas
 
-**Límites importantes**: no se descarga ni extrae solo el audio; no hay reproductores ocultos ni eliminación de la marca de YouTube. Su reproductor debe mantenerse visible y tener al menos 200 × 200 px de viewport. La disponibilidad depende de si el dueño del video permite insertarlo, de derechos regionales y de las políticas de YouTube. La pista musical del video **no se mezcla** como banda sonora invisible con la foto y las letras personalizadas de la Story no pueden sincronizarse automáticamente con el iframe. El modo YouTube admite fragmentos (no canción completa automática). No se requiere una clave de API ni hay costos adicionales de infraestructura para esta modalidad.
+1. **Openverse (Buscar música):** búsqueda automática de música publicada con licencia CC0, CC BY o marcada como dominio público. Verifica siempre las condiciones en la fuente original; el catálogo no garantiza todos los derechos.
+2. **Pixabay Music:** [buscar y descargar música](https://pixabay.com/music/) bajo la licencia de contenido de Pixabay. El editor ofrece un enlace directo. Descarga el archivo directamente desde Pixabay, comprueba la licencia de la pista y agrégalo desde «Subir audio».
+3. **Mixkit:** [buscar y descargar música](https://mixkit.co/free-stock-music/) bajo su licencia de música gratuita. Consulta el permiso de cada pista y añádela a tu biblioteca desde el editor.
+4. **Mis canciones:** biblioteca personal alojada en Supabase. Un archivo se sube una vez, se puede buscar y reutilizar; el propietario confirma que dispone de autorización.
+5. **Audius:** reproducción y búsqueda directas. El editor exige revisar derechos antes de sincronizar audio con la foto.
+6. **Solo escuchar:** reproductor oficial Apple Music para vistas previas; no permite insertar su catálogo como banda sonora de una Story.
 
-Documentación: https://developers.google.com/youtube/player_parameters y https://developers.google.com/youtube/terms/required-minimum-functionality
+**Flujo recomendado:** «Mis Stories → Crear Story → Música → Pixabay Music ↗» o «Mixkit ↗» → descarga un MP3 licenciado → «Subir audio ↓» → indica título/autor y confirma permiso → guardar en «Mis canciones» → escuchar → elegir canción completa o un fragmento → publicar.
+
+**Sobre licencias:** música gratuita no equivale a música comercial con derechos ilimitados. No se debe redistribuir audio aislado como biblioteca de descargas. Las canciones comerciales famosas no están incluidas automáticamente; usar una canción famosa en una Story pública requiere una licencia de sincronización específica. No se hicieron cargos.
+
+**Verificación:** repositorio actualizado y sintaxis de JavaScript comprobada. Falta probar desde navegador la subida y reproducción de un MP3 real, teniendo en cuenta el límite de 12 MB por archivo de nuestro bucket actual.
