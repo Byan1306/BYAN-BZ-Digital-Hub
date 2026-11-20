@@ -229,7 +229,12 @@ function showApplePreview(){
  frame.referrerPolicy='strict-origin-when-cross-origin';
  var note=document.createElement('p');note.className='studio-note';
  note.textContent='Apple Music permite preescuchar mediante su reproductor oficial. Para musicalizar una Story necesitas una licencia independiente.';
- section.append(title,frame,note);root.replaceChildren(section);
+ section.append(title,frame,note);
+ var official=safeCatalogLink(S.applePreview.link||'');
+ if(official&&/^https:\/\/music\.apple\.com\//.test(official)){
+  var openTrack=document.createElement('a');openTrack.href=official;openTrack.target='_blank';openTrack.rel='noopener noreferrer';openTrack.className='studio-note';openTrack.textContent='Ver canción en Apple Music ↗';section.appendChild(openTrack);
+ }
+ root.replaceChildren(section);
 }
 
 function renderSearchMessage(msg){
