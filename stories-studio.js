@@ -18,11 +18,12 @@ function stopAudio(){if(listenAudio){listenAudio.pause();listenAudio.removeAttri
 function markup(){
  return '<div class="story-dialog story-studio" id="studio-root">'
  +'<div class="studio-left"><div class="studio-top"><button type="button" class="studio-ghost" id="studio-cancel">← Cancelar</button><strong>BYAN_BZ · STORY</strong><button type="button" class="studio-publish" id="studio-publish">Publicar</button></div>'
- +'<div class="studio-canvas" id="studio-canvas"><div class="studio-placeholder" id="studio-photo-placeholder"><span>✦</span>Selecciona una fotografía<br>para comenzar tu story</div><img id="studio-preview" alt="Vista previa de la story"><div class="story-textoverlay bottom" id="studio-caption-preview"></div><div class="story-emoji" id="studio-emoji-preview"></div><div class="studio-crop-hint" id="studio-drag-hint" hidden>Arrastra la foto para ajustar el encuadre</div></div></div>'
+ +'<div class="studio-canvas" id="studio-canvas"><div class="studio-placeholder" id="studio-photo-placeholder"><span>✦</span>Selecciona una fotografía<br>para comenzar tu story</div><img id="studio-preview" alt="Vista previa de la story"><div class="story-lyrics karaoke" id="studio-lyrics-preview"></div><div class="story-textoverlay bottom" id="studio-caption-preview"></div><div class="story-emoji" id="studio-emoji-preview"></div><div class="studio-crop-hint" id="studio-drag-hint" hidden>Arrastra la foto para ajustar el encuadre</div></div></div>'
  +'<div class="studio-right"><nav class="studio-tools" aria-label="Herramientas de Stories">'
  +'<button type="button" class="studio-tab" data-studio-panel="photo"><span class="studio-tab-icon">◱</span> Foto</button>'
  +'<button type="button" class="studio-tab" data-studio-panel="music"><span class="studio-tab-icon">♫</span> Música</button>'
- +'<button type="button" class="studio-tab" data-studio-panel="text"><span class="studio-tab-icon">Aa</span> Texto</button>'
+  +'<button type="button" class="studio-tab" data-studio-panel="text"><span class="studio-tab-icon">Aa</span> Texto</button>'
+ +'<button type="button" class="studio-tab" data-studio-panel="lyrics"><span class="studio-tab-icon">♬</span> Letras</button>'
  +'<button type="button" class="studio-tab" data-studio-panel="filters"><span class="studio-tab-icon">✦</span> Filtros</button>'
  +'<button type="button" class="studio-tab" data-studio-panel="options"><span class="studio-tab-icon">⚙</span> Más</button>'
  +'</nav><div class="studio-body"><div class="studio-status" id="studio-status" role="status"></div><div id="studio-panel-body"></div><p class="studio-error" id="studio-error" aria-live="polite"></p></div></div></div>';
@@ -35,7 +36,8 @@ function initStoryState(editing){
    caption:editing&&editing.caption||'',captionColor:editing&&editing.caption_color||'#ffffff',captionPosition:editing&&editing.caption_position||'bottom',
    emoji:editing&&editing.emoji||'',title:editing&&editing.title||'',pinned:!!(editing&&editing.pinned),
    mode:editing&&editing.music_mode||'clip',start:editing?Number(editing.music_start_sec||0):0,clip:editing?Math.min(120,Number(editing.duration_seconds||15)):15,
-   noMusicDuration:editing?fns.clamp(editing.duration_seconds||8,5,20):8,busy:false
+   noMusicDuration:editing?fns.clamp(editing.duration_seconds||8,5,20):8,
+   lyricsEnabled:!!(editing&&editing.lyrics_enabled),lyricsLrc:editing&&editing.lyrics_lrc||'',lyricsStyle:editing&&editing.lyrics_style||'karaoke',busy:false
  };
 }
 function preview(){
@@ -52,6 +54,7 @@ function preview(){
  img.style.filter=filterClasses[S.filter]||'none';
  var c=$('#studio-caption-preview');c.textContent=S.caption;c.style.color=S.captionColor;c.className='story-textoverlay '+S.captionPosition;
  $('#studio-emoji-preview').textContent=S.emoji;
+ showStudioLyrics(listenAudio?listenAudio.currentTime:S.start);
  var hint=$('#studio-drag-hint');hint.hidden=!src;
 }
 function setPanel(panel){
@@ -62,6 +65,7 @@ function setPanel(panel){
  if(panel==='photo')html=photoPanel();
  if(panel==='music')html=musicPanel();
  if(panel==='text')html=textPanel();
+ if(panel==='lyrics')html=lyricsPanel();
  if(panel==='filters')html=filtersPanel();
  if(panel==='options')html=optionsPanel();
  $('#studio-panel-body').innerHTML=html||'';
@@ -89,6 +93,34 @@ function textPanel(){
  +['💜','✨','🔥','🎮','🏀','😍','🌙','🌴','⭐','🪐'].map(function(x){return '<option value="'+x+'"'+(S.emoji===x?' selected':'')+'>'+x+'</option>'}).join('')
  +'</select></label></div>';
 }
+
+function parseTimedLyrics(raw){
+ return String(raw||'').split(/\r?\n/).map(function(line){
+  var m=line.match(/^\[(\d{1,2}):(\d{2})(?:\.(\d{1,3}))?\]\s*(.{0,200})$/);
+  if(!m||Number(m[2])>59||!m[4].trim())return null;
+  return {time:Number(m[1])*60+Number(m[2])+(m[3]?Number(m[3].padEnd(3,'0'))/1000:0),text:m[4].trim()};
+ }).filter(Boolean).sort(function(a,b){return a.time-b.time}).slice(0,140);
+}
+function showStudioLyrics(seconds){
+ var box=$('#studio-lyrics-preview');if(!box||!S)return;
+ box.className='story-lyrics '+S.lyricsStyle;
+ if(!S.lyricsEnabled){box.textContent='';box.style.display='none';return}
+ var lines=parseTimedLyrics(S.lyricsLrc),on=lines.filter(function(l){return l.time<=seconds}).pop();
+ box.style.display='block';
+ box.textContent=on?on.text:'♪ Sincroniza las frases en la pestaña Letras';
+}
+function lyricsPanel(){
+ return '<div class="studio-panel"><h3>Letras sincronizadas</h3>'
+ +'<p class="studio-sub">Estilo karaoke: cada frase aparece cuando suena su segundo. Añade únicamente letras que sean tuyas o tengas permiso de publicar.</p>'
+ +'<label class="studio-check"><input id="studio-lyrics-enabled" type="checkbox"'+(S.lyricsEnabled?' checked':'')+'> Mostrar letras sobre la story</label>'
+ +'<label>Estilo<select id="studio-lyrics-style"><option value="karaoke"'+(S.lyricsStyle==='karaoke'?' selected':'')+'>Karaoke luminoso</option><option value="clean"'+(S.lyricsStyle==='clean'?' selected':'')+'>Blanco limpio</option><option value="glass"'+(S.lyricsStyle==='glass'?' selected':'')+'>Cristal violeta</option></select></label>'
+ +'<label>Letras con tiempo (formato LRC)<textarea id="studio-lyrics-lrc" rows="9" maxlength="12000" spellcheck="false" placeholder="[00:00.00]Primera frase\n[00:05.50]Siguiente frase">'+fns.esc(S.lyricsLrc)+'</textarea></label>'
+ +'<div class="studio-preview-controls"><button class="studio-action secondary" id="studio-stamp-lyric" type="button">⏱ Insertar segundo actual</button><button class="studio-action secondary" id="studio-check-lyrics" type="button">Verificar letras</button></div>'
+ +'<p class="studio-note">Reproduce tu audio desde Música y pulsa «Insertar segundo actual» para marcar el momento. Después escribe la frase. Las marcas son relativas a la canción completa.</p>'
+ +'<div id="studio-lyrics-info" class="studio-status" aria-live="polite"></div>'
+ +'</div>';
+}
+
 function filtersPanel(){
  var filters=[['original','Natural'],['cinematico','Cine'],['vintage','Vintage'],['noir','Blanco y negro'],['calido','Cálido'],['frio','Frío'],['lila','Violeta'],['dreamy','Dreamy']];
  return '<div class="studio-panel"><h3>Filtros</h3><p class="studio-sub">Elige el aspecto de la foto y mira el cambio al instante.</p><div class="studio-filters">'
@@ -232,6 +264,7 @@ function listen(){
   },{once:true});
   listenAudio.addEventListener('timeupdate',function(){
     if(!S||current!==listenAudio)return;
+    showStudioLyrics(current.currentTime);
     if(S.mode==='clip'&&current.currentTime>=listenEndsAt)stopAudio();
   });
   listenAudio.addEventListener('ended',function(){if(current===listenAudio)stopAudio()});
@@ -298,6 +331,14 @@ function attachEvents(){
   if(t.id==='studio-listen'){listen();return}
   if(t.id==='studio-upload-track'){uploadMusic();return}
   if(t.id==='studio-go-music'){setPanel('music');return}
+  if(t.id==='studio-stamp-lyric'){
+   var secs=listenAudio?listenAudio.currentTime:(S.start||0),mm=Math.floor(secs/60),ss=(secs%60).toFixed(2).padStart(5,'0'),area=$('#studio-lyrics-lrc');if(!area)return;
+   var stamp='['+String(mm).padStart(2,'0')+':'+ss+']';
+   var at=area.selectionStart||0;area.value=area.value.slice(0,at)+(at&&area.value[at-1]!=='\n'?'\n':'')+stamp+area.value.slice(at);S.lyricsLrc=area.value;area.focus();area.selectionStart=area.selectionEnd=area.value.indexOf(stamp,at)+stamp.length;preview();return;
+  }
+  if(t.id==='studio-check-lyrics'){
+   var count=parseTimedLyrics(S.lyricsLrc).length,info=$('#studio-lyrics-info');if(info)info.textContent=count?count+' frases sincronizadas.':'No se encontraron marcas válidas. Usa [00:05.00]Texto';return;
+  }
  });
  root.addEventListener('input',function(e){
   var t=e.target;
@@ -312,6 +353,10 @@ function attachEvents(){
   if(['studio-text-value','studio-text-color','studio-text-position','studio-emoji'].includes(t.id)){preview();return}
   if(t.id==='studio-title')S.title=t.value;
   if(t.id==='studio-highlight')S.pinned=t.checked;
+  if(t.id==='studio-lyrics-enabled')S.lyricsEnabled=t.checked;
+  if(t.id==='studio-lyrics-lrc')S.lyricsLrc=t.value;
+  if(t.id==='studio-lyrics-style')S.lyricsStyle=t.value;
+  if(['studio-lyrics-enabled','studio-lyrics-lrc','studio-lyrics-style'].includes(t.id)){preview();return}
   if(t.id==='studio-no-music-duration')S.noMusicDuration=fns.clamp(t.value,5,20);
   if(t.id==='studio-search'){
    S.searchTerm=t.value;
@@ -362,6 +407,7 @@ function payloadForStory(){
   music_track_seconds:t&&t.duration?Math.round(t.duration):null,
   music_start_sec:t&&S.mode==='clip'?Math.round(fns.clamp(S.start,0,7200)):0,
   duration_seconds:duration,
+  lyrics_enabled:S.lyricsEnabled,lyrics_lrc:S.lyricsEnabled?S.lyricsLrc:'',lyrics_style:S.lyricsStyle,
   photo_fit:S.fit,photo_x:Math.round(S.photoX*100)/100,photo_y:Math.round(S.photoY*100)/100,
   photo_zoom:Math.round(S.photoZoom*100)/100
  };
@@ -373,6 +419,7 @@ async function publish(){
  if(S.selected&&S.mode==='clip'&&S.selected.duration && S.start+S.clip>S.selected.duration){
   setPanel('music');setError('El fragmento debe terminar antes que la canción.');return
  }
+ if(S.lyricsEnabled&&!parseTimedLyrics(S.lyricsLrc).length){setPanel('lyrics');setError('Añade al menos una frase con tiempo válido [00:05.00]Texto');return}
  var payload;try{payload=payloadForStory()}catch(e){setPanel('music');setError(e.message);return}
  S.busy=true;var btn=$('#studio-publish');btn.disabled=true;btn.textContent='Publicando…';setError('');
  var uploaded=[];
