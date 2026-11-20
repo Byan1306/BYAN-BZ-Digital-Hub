@@ -40,6 +40,7 @@ body:not(.is-admin) [data-action="open-editor-photos"],body:not(.is-admin) [data
 .auth-login{display:grid;gap:12px;margin-top:18px}.auth-login input{background:#17192d;color:white;border:1px solid #5c507d;border-radius:12px;padding:14px;width:100%;font:inherit}.auth-login p{color:#b8bcd5;font-size:13px}.auth-login button{justify-self:start}
 #cloud-status{color:#b9d6d8}
 </style>
+  <link rel="stylesheet" href="./stories.css?v=1">
 </head>
 <body>
   <svg aria-hidden="true" width="0" height="0" style="position:absolute;overflow:hidden" xmlns="http://www.w3.org/2000/svg"><defs>
@@ -65,7 +66,7 @@ body:not(.is-admin) [data-action="open-editor-photos"],body:not(.is-admin) [data
     <nav class="nav" id="site-nav" aria-label="Navegación principal">
       <a class="active" href="#inicio"><svg class="stroke-icon"><use href="#i-home"/></svg>Inicio</a>
       <a href="#gaming"><svg class="stroke-icon"><use href="#i-game"/></svg>Gaming</a>
-      <a href="#fotos"><svg class="stroke-icon"><use href="#i-photo"/></svg>Fotos</a>
+      <a href="#stories">✦ Stories</a><a href="#fotos"><svg class="stroke-icon"><use href="#i-photo"/></svg>Fotos</a>
       <a href="#proyectos"><svg class="stroke-icon"><use href="#i-code"/></svg>Proyectos</a><button type="button" id="admin-menu-login" class="admin-nav-link">Iniciar sesión</button>
     </nav>
     <div class="header-actions"><button class="icon-button" id="theme-btn" type="button" aria-label="Cambiar tono de color" title="Cambiar tono de color"><svg class="stroke-icon"><use href="#i-moon"/></svg></button><button class="config-button" id="edit-btn" style="display:none" type="button"><svg class="stroke-icon"><use href="#i-settings"/></svg><span>Personalizar</span></button><button class="icon-button mobile-nav-trigger" id="nav-toggle" type="button" aria-label="Abrir menú" aria-expanded="false"><svg class="stroke-icon"><use href="#i-menu"/></svg></button></div>
@@ -78,7 +79,7 @@ body:not(.is-admin) [data-action="open-editor-photos"],body:not(.is-admin) [data
     </section>
     <section class="feature-grid" aria-label="Categorías"><a class="feature-card gaming" href="#gaming"><div class="card-stencil controller-stencil"></div><div class="feature-icon"><svg class="stroke-icon"><use href="#i-game"/></svg></div><div><h2 class="feature-title">Gaming</h2><div class="feature-sub">Mis juegos, IDs y progreso</div></div><span class="feature-arr"><svg class="stroke-icon"><use href="#i-arrow"/></svg></span></a><a class="feature-card photos" href="#fotos"><div class="card-stencil photo-stencil"></div><div class="feature-icon"><svg class="stroke-icon"><use href="#i-photo"/></svg></div><div><h2 class="feature-title">Fotos</h2><div class="feature-sub">Galería y momentos</div></div><span class="feature-arr"><svg class="stroke-icon"><use href="#i-arrow"/></svg></span></a><a class="feature-card project" href="#proyectos"><div class="card-stencil project-stencil"></div><div class="feature-icon"><svg class="stroke-icon"><use href="#i-code"/></svg></div><div><h2 class="feature-title">Proyectos</h2><div class="feature-sub">Ideas, tecnología y más</div></div><span class="feature-arr"><svg class="stroke-icon"><use href="#i-arrow"/></svg></span></a></section>
     <section class="dashboard" aria-label="Lo destacado"><article class="panel" id="gaming"><div class="panel-head"><svg class="stroke-icon" style="color:#be6aff"><use href="#i-game"/></svg><h2>Mis Gamertags</h2><button class="panel-link" data-action="show-games" type="button">Ver todos →</button></div><div class="tag-list" id="tags-preview"></div></article><article class="panel"><div class="panel-head"><svg class="stroke-icon"><use href="#i-photo"/></svg><h2>Galería destacada</h2><a class="panel-link" href="#fotos">Ver galería →</a></div><div class="gallery-mosaic" id="gallery-mosaic"></div></article><article class="panel"><div class="panel-head"><svg class="stroke-icon"><use href="#i-code"/></svg><h2>Proyecto destacado</h2></div><div id="project-preview"></div></article></section>
-    <div class="below"><section id="fotos"><div class="section-heading"><div><div class="smallcaps dim">YOUR GALLERY</div><h2>Momentos en imágenes<span style="color:var(--purple)">.</span></h2><p>Tu rincón para guardar fotografías y recuerdos.</p></div><button type="button" class="button button-outline" data-action="open-editor-photos"><svg class="stroke-icon"><use href="#i-plus"/></svg>Añadir fotos</button></div><div class="gallery-grid" id="gallery-grid"></div><p class="soft-note" id="gallery-disclaimer">Las fotos mostradas son ejemplos del diseño. Sube tus propias imágenes para reemplazarlas.</p></section>
+    <div class="below"><section id="stories" class="story-section" aria-label="Stories de BYAN_BZ"><div class="story-titlebar"><div><div class="smallcaps dim">LITTLE MOMENTS · BIG MEMORIES</div><h2>Mis Stories<em>.</em></h2><p>Recuerdos con música, filtros y algo de magia. ✨</p></div><div class="story-tools"><button id="story-new-btn" class="story-button primary" type="button" hidden>＋ Crear story</button><button id="story-clean-btn" class="story-button" type="button" hidden>Limpiar vencidas</button></div></div><div id="story-strip" class="story-strip"><div class="story-empty"><span class="story-empty-icon">✦</span> Cargando stories…</div></div><p id="story-message" class="story-note" aria-live="polite"></p></section><section id="fotos"><div class="section-heading"><div><div class="smallcaps dim">YOUR GALLERY</div><h2>Momentos en imágenes<span style="color:var(--purple)">.</span></h2><p>Tu rincón para guardar fotografías y recuerdos.</p></div><button type="button" class="button button-outline" data-action="open-editor-photos"><svg class="stroke-icon"><use href="#i-plus"/></svg>Añadir fotos</button></div><div class="gallery-grid" id="gallery-grid"></div><p class="soft-note" id="gallery-disclaimer">Las fotos mostradas son ejemplos del diseño. Sube tus propias imágenes para reemplazarlas.</p></section>
     <section id="proyectos" style="margin-top:55px"><div class="section-heading"><div><div class="smallcaps dim">WHAT I'M BUILDING</div><h2>Mis proyectos<span style="color:var(--purple)">.</span></h2><p>Ideas, experimentos y cosas que estoy creando.</p></div><button class="button button-outline" type="button" data-action="open-editor-projects"><svg class="stroke-icon"><use href="#i-plus"/></svg>Añadir proyecto</button></div><div class="project-grid" id="project-grid"></div></section></div>
   </main>
   <footer class="page footer"><div><b>BYAN_BZ</b> &nbsp; / &nbsp; DIGITAL HUB <span style="margin-left:10px">· © 2026</span></div><div class="footer-mark">///</div></footer>
@@ -88,6 +89,7 @@ body:not(.is-admin) [data-action="open-editor-photos"],body:not(.is-admin) [data
   <input type="file" id="import-json" accept=".json,application/json" hidden>
   <script id="site-data" type="application/json">{"profile":{"eyebrow":"WELCOME TO MY DIGITAL HUB","tagline":"Gaming · Tech · Proyectos · Fotos","description":"Mi espacio personal en la web. Aquí reúno mis juegos, fotos y proyectos creativos, todo en un solo lugar."},"gamertags":[{"platform":"Minecraft / Xbox","handle":"BYAN0912"},{"platform":"Fortnite","handle":"Byan_BZ."}],"photos":[],"projects":[{"name":"Mars EVA Navigator","category":"Proyecto espacial · NASA Space Apps 2026","description":"Explorador y planificador de rutas de superficie marciana con información topográfica para misiones EVA.","url":""}],"theme":"violet"}</script>
   <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.57.0/dist/umd/supabase.js"></script>
+  <script defer src="./stories.js?v=1"></script>
   <script>
   (()=>{'use strict';
     const KEY='byan_bz_digital_hub_v1';
@@ -107,6 +109,7 @@ body:not(.is-admin) [data-action="open-editor-photos"],body:not(.is-admin) [data
     const SUPABASE_URL='https://pcgpsrbmdiumtnkzlwym.supabase.co';
     const SUPABASE_PUBLISHABLE_KEY='sb_publishable_iWhHusoUGCzgOqlNRGteGQ__pcvAMr0';
     let db=null,isAdmin=false,cloudLoading=false,saveTimer=null,saveChain=Promise.resolve(),currentUser=null;
+    window.BYAN_STORIES_CONTEXT={getClient:()=>db,getIsAdmin:()=>isAdmin};
     async function initializeCloud(){
       let attempts=0;
       while(!window.supabase?.createClient && attempts++<50)await new Promise(r=>setTimeout(r,100));
@@ -142,6 +145,7 @@ body:not(.is-admin) [data-action="open-editor-photos"],body:not(.is-admin) [data
       const button=$('#admin-menu-login');
       button.textContent=isAdmin?'Administrar página':user?'Cerrar sesión / Cuenta':'Iniciar sesión';
       if(isAdmin)toast('¡Bienvenido! Tienes acceso de administrador');
+      window.dispatchEvent(new CustomEvent('byan-auth-changed',{detail:{isAdmin}}));
     }
     function scheduleSave(){
       clearTimeout(saveTimer);
