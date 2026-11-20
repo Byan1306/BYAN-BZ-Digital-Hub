@@ -276,6 +276,76 @@ function safeCatalogLink(s){
  if(['music.apple.com','itunes.apple.com','musicbrainz.org'].includes(u.hostname))return u.href;
  return '';}catch(e){return ''}
 }
+function normalizeSong(x){return String(x||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z0-9]+/g,' ').trim()}
+function songSearchScore(t,q){
+ var title=normalizeSong(t.title),artist=normalizeSong(t.artist),needle=normalizeSong(q),score=0;
+ if(title===needle)score+=110;
+ if(title.startsWith(needle))score+=60;
+ if(title.includes(needle))score+=35;
+ if(artist===needle)score+=80;
+ if(artist.includes(needle))score+=30;
+ needle.split(' ').filter(function(w){return w.length>1}).forEach(function(w){if(title.includes(w))score+=14;if(artist.includes(w))score+=9});
+ if(t.source==='library')score+=24;
+ if(t.source==='popular')score+=12;
+ return score;
+}
+async function searchAllMusic(){
+ if(!S||S.catalog!=='all')return;
+ if(searchAbort)searchAbort.abort();
+ var q=S.searchTerm.trim();
+ if(q.length<2){S.results=[];S.loading=false;paintResults();return}
+ var token=searchAbort=new AbortController();
+ var timeout=setTimeout(function(){token.abort()},10000);
+ S.loading=true;paintResults();
+ function get(url){return fetch(url,{signal:token.signal}).then(function(r){if(!r.ok)throw Error('HTTP '+r.status);return r.json()})}
+ try{
+  var base='https://itunes.apple.com/search?term='+encodeURIComponent(q)+'&entity=song&media=music&limit=35&country=';
+  var values=await Promise.allSettled([
+   get(base+'CR'),get(base+'US'),
+   get('https://api.audius.co/v1/tracks/search?query='+encodeURIComponent(q)+'&limit=35&app_name=BYAN_BZ_Digital_Hub'),
+   get('https://api.openverse.org/v1/audio/?q='+encodeURIComponent(q)+'&license=cc0,by,pdm&category=music&page_size=30'),
+   opts.db.from('music_library').select('id,title,artist,path,duration_seconds').order('created_at',{ascending:false}).limit(100)
+  ]);
+  if(!S||searchAbort!==token||S.catalog!=='all')return;
+  var songs=[],seen=new Set();
+  function add(t){if(!t||!t.title)return;var key=t.source+'|'+normalizeSong(t.title)+'|'+normalizeSong(t.artist)+'|'+normalizeSong(t.album);if(seen.has(key))return;seen.add(key);songs.push(t)}
+  [0,1].forEach(function(n){
+   var data=values[n].status==='fulfilled'?values[n].value:{};
+   (Array.isArray(data.results)?data.results:[]).filter(function(t){return t&&t.kind==='song'&&t.trackName&&t.artistName}).forEach(function(t){
+    add({source:'popular',id:String(t.trackId||''),title:String(t.trackName).slice(0,100),artist:String(t.artistName).slice(0,100),
+      album:String(t.collectionName||'').slice(0,100),duration:Math.round(Number(t.trackTimeMillis||0)/1000),
+      artwork:String(t.artworkUrl100||'').replace(/^http:/,'https:'),link:safeCatalogLink(t.trackViewUrl||t.collectionViewUrl||'')});
+   });
+  });
+  var audius=values[2].status==='fulfilled'?values[2].value:{};
+  (Array.isArray(audius.data)?audius.data:[]).filter(function(t){
+   return t&&/^[A-Za-z0-9_-]{2,100}$/.test(String(t.id||''))&&t.is_streamable!==false&&(!t.access||t.access.stream!==false)&&!t.is_delete;
+  }).forEach(function(t){add({source:'audius',id:String(t.id),title:String(t.title||'').slice(0,100),
+    artist:String(t.user&&t.user.name||'Artista').slice(0,100),duration:Number(t.duration)||0,
+    artwork:String(t.artwork&&(t.artwork['150x150']||t.artwork['480x480'])||''),
+    link:safeLink(t.permalink||'')})});
+  var ov=values[3].status==='fulfilled'?values[3].value:{};
+  (Array.isArray(ov.results)?ov.results:[]).filter(function(t){
+   return t&&['cc0','by','pdm'].includes(String(t.license||'').toLowerCase())&&safeHTTPS(t.url)&&safeHTTPS(t.foreign_landing_url)&&(!t.category||t.category==='music');
+  }).forEach(function(t){
+   var raw=Number(t.duration)||0,seconds=raw>7200?Math.round(raw/1000):Math.round(raw),lic=String(t.license).toLowerCase();
+   add({source:'openverse',id:String(t.id||''),title:String(t.title||'Audio').slice(0,100),artist:String(t.creator||'Artista').slice(0,100),
+    duration:seconds>=5&&seconds<=7200?seconds:0,artwork:String(t.thumbnail||''),audioUrl:safeHTTPS(t.url),link:safeHTTPS(t.foreign_landing_url),
+    license:lic,licenseUrl:safeHTTPS(t.license_url),attribution:String(t.attribution||((t.title||'Audio')+' — '+(t.creator||'Artista'))).slice(0,450)});
+  });
+  if(values[4].status==='fulfilled'&&values[4].value&&!values[4].value.error){
+   S.library=(values[4].value.data||[]).map(function(t){return {source:'library',id:t.id,title:t.title,artist:t.artist||'',path:t.path,duration:Number(t.duration_seconds)||0,artwork:''}});
+   S.libraryLoaded=true;S.library.forEach(add);
+  }
+  if(normalizeSong(q).includes('shock the world')&&!songs.some(function(t){return t.source==='popular'&&normalizeSong(t.artist).includes('that boy franco')&&normalizeSong(t.title).includes('shock the world')})){
+   add({source:'popular',id:'shock-franco',title:'Shock The World',artist:'That Boy Franco',album:'Shock The World - Single',duration:0,artwork:'',link:'https://music.apple.com/us/album/shock-the-world-single/1856891416'});
+  }
+  songs.sort(function(a,b){return songSearchScore(b,q)-songSearchScore(a,q)});
+  S.results=songs.slice(0,110);S.loading=false;paintResults();
+ }catch(e){if(S&&searchAbort===token){S.results=[];S.loading=false;renderSearchMessage('No se pudo completar la búsqueda. Prueba otra vez.')}}
+ finally{clearTimeout(timeout)}
+}
+
 async function searchPopular(){
  if(!S||S.catalog!=='popular')return;
  if(searchAbort)searchAbort.abort();
