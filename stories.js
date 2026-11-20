@@ -252,10 +252,10 @@ function bind(){
 }
 var tries=0;
 function boot(){
- if(!el('#story-section'))return;
+ if(!el('#stories'))return;
  ctx=window.BYAN_STORIES_CONTEXT;
  db=ctx&&ctx.getClient&&ctx.getClient();
- if(!db){if(++tries<100)setTimeout(boot,120);return}
+ if(!db){if(++tries<100){setTimeout(boot,120)}else{var strip=el('#story-strip');if(strip)strip.innerHTML='<div class="story-empty"><span class="story-empty-icon">!</span><span>No se pudo conectar a Stories. Actualiza la página o revisa tu conexión.</span></div>'}return}
  bind();load();
 }
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot,{once:true});else boot();
