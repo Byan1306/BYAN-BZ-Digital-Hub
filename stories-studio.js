@@ -32,7 +32,7 @@ function markup(){
 }
 function initStoryState(editing){
  return {
-   editing:editing||null, panel:'photo', file:null, selected:null, catalog:'openverse', searchTerm:'', searchArtist:'', results:[], library:[], loading:false, applePreview:null,licenseTarget:null,licenseConfirmed:false,
+   editing:editing||null, panel:'photo', file:null, selected:null, catalog:'all', searchTerm:'', searchArtist:'', results:[], library:[], libraryLoaded:false, loading:false, applePreview:null,licenseTarget:null,licenseConfirmed:false,
    filter:editing&&editing.image_filter||'original', fit:editing&&editing.photo_fit||'cover',
    photoX:editing?Number(editing.photo_x):50,photoY:editing?Number(editing.photo_y):50,photoZoom:editing?Number(editing.photo_zoom):1,
    caption:editing&&editing.caption||'',captionColor:editing&&editing.caption_color||'#ffffff',captionPosition:editing&&editing.caption_position||'bottom',
@@ -71,7 +71,7 @@ function setPanel(panel){
  if(panel==='filters')html=filtersPanel();
  if(panel==='options')html=optionsPanel();
  $('#studio-panel-body').innerHTML=html||'';
- if(panel==='music'){paintResults();if(S.catalog==='library')loadLibrary();}
+ if(panel==='music'){paintResults();if(S.catalog==='all'&&!S.libraryLoaded){S.libraryLoaded=true;loadLibrary()}else if(S.catalog==='library')loadLibrary();}
 }
 function photoPanel(){
  return '<div class="studio-panel"><h3>Encuadre de foto</h3><p class="studio-sub">Como en las Stories: elige cómo llenar el marco y arrastra la foto para recolocarla.</p>'
@@ -140,34 +140,23 @@ function optionsPanel(){
 }
 
 function musicPanel(){
- return '<div class="studio-panel"><h3>Música para tus Stories ♫</h3>'
- +'<p class="studio-sub">Agrega música directamente a la foto: busca canciones libres o reutiliza los audios que guardes en tu biblioteca.</p>'
- +'<div class="studio-catalog-tabs">'
- +'<button class="studio-source-tab'+(S.catalog==='openverse'?' active':'')+'" type="button" data-studio-source="openverse">🎵 Buscar música</button>'
- +'<button class="studio-source-tab'+(S.catalog==='library'?' active':'')+'" type="button" data-studio-source="library">♫ Mis canciones</button>'
- +'<button class="studio-source-tab'+(S.catalog==='audius'?' active':'')+'" type="button" data-studio-source="audius">▶ Audius</button>'
- +'<button class="studio-source-tab'+(S.catalog==='popular'?' active':'')+'" type="button" data-studio-source="popular">★ Éxitos y licencias</button>'
- +'</div>'
- +'<label class="studio-music-query"><input autocomplete="off" type="search" id="studio-search" placeholder="Nombre de la canción o artista" value="'+fns.esc(S.searchTerm)+'"></label>'
- +'<p class="studio-source-note">'+(S.catalog==='popular'?'Encuentra éxitos y escucha su vista previa oficial. Para publicar la grabación necesitas derechos sobre la composición y el audio.':S.catalog==='openverse'?'Pistas declaradas CC0, dominio público o CC BY. Se comprobará que el audio cargue antes de publicar; verifica la licencia original.':S.catalog==='audius'?'Audios reproducibles de Audius. No todos autorizan sincronización con fotos; revisa los permisos originales.':'Tu propia música autorizada, lista para reproducir y reutilizar.')+'</p>'
- +'<div class="studio-import-music"><strong>🎵 Música autorizada para tus fotos</strong><p>Busca pistas que permitan también alojar el archivo en tu web. Si ya tienes el permiso y la canción, guárdala una sola vez en tu biblioteca.</p><div class="studio-import-links"><button class="studio-action secondary" type="button" id="studio-pixabay-music">Pixabay Music ↗</button><button class="studio-action secondary" type="button" id="studio-mixkit-music">Mixkit ↗</button><button class="studio-action secondary" type="button" id="studio-my-music">Subir audio ↓</button></div></div>'
- +'<div class="studio-results" id="studio-results"><div class="studio-message">Escribe el nombre de una canción o artista.</div></div>'
- +'<div id="studio-apple-preview"></div>'
- +'<div id="studio-license-panel">'+licensePanel()+'</div>'
- +'<div id="studio-selected-box">'+selectedMarkup()+'</div>'
- +'<details class="studio-uploads"><summary>＋ Agregar mi propio audio a la biblioteca</summary>'
- +'<div><label>Archivo MP3, WAV, OGG o M4A (máximo 12 MB)<input type="file" id="studio-upload-audio" accept=".mp3,.ogg,.wav,.m4a,audio/mpeg,audio/mp4,audio/ogg,audio/wav"></label>'
- +'<label>Nombre de la canción<input id="studio-upload-title" placeholder="Título"></label>'
+ return '<div class="studio-panel"><h3>Elige tu música ♫</h3>'
+ +'<p class="studio-sub">Busca títulos, artistas o géneros en un solo lugar.</p>'
+ +'<label class="studio-music-query"><input autocomplete="off" type="search" id="studio-search" placeholder="Buscar cualquier canción o artista…" value="'+fns.esc(S.searchTerm)+'"></label>'
+ +'<div class="studio-results" id="studio-results"></div><div id="studio-apple-preview"></div>'
+ +'<div id="studio-license-panel">'+licensePanel()+'</div><div id="studio-selected-box">'+selectedMarkup()+'</div>'
+ +'<details class="studio-uploads"><summary>＋ Añadir un audio a Mis canciones</summary><div>'
+ +'<label>MP3, WAV, OGG o M4A (máximo 12 MB)<input type="file" id="studio-upload-audio" accept=".mp3,.ogg,.wav,.m4a,audio/mpeg,audio/mp4,audio/ogg,audio/wav"></label>'
+ +'<label>Título<input id="studio-upload-title" placeholder="Nombre de la canción"></label>'
  +'<label>Artista<input id="studio-upload-artist" placeholder="Artista"></label>'
- +'<label>Tipo de autorización<select id="studio-rights-basis"><option value="original">La canción es mía</option><option value="open_license">Licencia abierta</option><option value="direct_permission">Permiso escrito del titular</option><option value="commercial_license">Licencia comercial adquirida</option></select></label>'
- +'<label>Referencia del permiso (solo visible para ti)<input id="studio-rights-reference" maxlength="900" placeholder="URL, certificado o número de licencia"></label>'
- +'<p class="studio-note">La licencia debe permitir alojar y reproducir públicamente el archivo, además de sincronizarlo con fotografías. Comprar una canción para escucharla no concede estos permisos.</p>'
- +'<label class="studio-check"><input id="studio-rights" type="checkbox"> Tengo autorización para publicar la grabación y la composición en BYAN_BZ</label>'
+ +'<label>Tipo de autorización<select id="studio-rights-basis"><option value="original">Soy titular</option><option value="open_license">Licencia abierta</option><option value="direct_permission">Permiso escrito</option><option value="commercial_license">Licencia comercial</option></select></label>'
+ +'<label>Referencia privada del permiso<input id="studio-rights-reference" maxlength="900" placeholder="URL o número de licencia"></label>'
+ +'<label class="studio-check"><input id="studio-rights" type="checkbox"> Confirmo que este audio se puede alojar, reproducir y sincronizar con fotografías en mi web</label>'
  +'<button class="studio-action" id="studio-upload-track" type="button">Guardar en mi biblioteca</button></div></details>'
- +'<p class="studio-copyright">Los éxitos del buscador son referencias: requieren permiso antes de añadirse a una Story. Las licencias de bibliotecas gratuitas también pueden restringir alojar y compartir el audio como archivo independiente.</p>'
- +'</div>';
+ +'<details class="studio-licensed-music-extra"><summary>Explorar música gratuita</summary><p>Verifica las condiciones originales antes de subir una grabación.</p>'
+ +'<div class="studio-import-links"><button class="studio-action secondary" id="studio-pixabay-music" type="button">Pixabay Music ↗</button><button class="studio-action secondary" id="studio-mixkit-music" type="button">Mixkit ↗</button></div></details>'
+ +'<p class="studio-copyright">El buscador reúne canciones de distintas fuentes. Seleccionar una pista muestra las opciones posibles; encontrarla no concede derechos de publicación.</p></div>';
 }
-
 function licenseRequestText(t){
  var track=(t&&t.title||'').trim(),artist=(t&&t.artist||'').trim();
  return 'Asunto: Solicitud de licencia para '+track+' — '+artist+'\n\n'+
@@ -179,7 +168,7 @@ function licenseRequestText(t){
  'el territorio, la duración de la licencia y si existe algún costo.\n\nGracias.';
 }
 function licensePanel(){
- if(!S||!S.licenseTarget||S.catalog!=='popular')return '';
+ if(!S||!S.licenseTarget)return '';
  var t=S.licenseTarget;
  return '<div class="studio-license-workflow"><strong>Licencia para '+fns.esc(t.title)+' — '+fns.esc(t.artist)+'</strong>'
  +'<p>Esta versión comercial todavía no está autorizada para publicarse en tu web. Escucharla en Apple Music no concede derechos sobre la música ni la grabación.</p>'
@@ -229,7 +218,7 @@ function updateSelectionMarkup(){
 }
 function showApplePreview(){
  var root=$('#studio-apple-preview');if(!root)return;
- if(S.catalog!=='popular'||!S.applePreview){root.replaceChildren();return}
+ if(!S.applePreview){root.replaceChildren();return}
  var embed=appleEmbedURL(S.applePreview);
  if(!embed){root.textContent='Vista previa no disponible para esta canción. Puedes abrirla en Apple Music.';return}
  var section=document.createElement('div');section.className='studio-official-player';
@@ -248,45 +237,24 @@ function renderSearchMessage(msg){
 }
 function paintResults(){
  var box=$('#studio-results');if(!box||!S||S.panel!=='music')return;
- if(S.loading){renderSearchMessage('Buscando canciones…');showApplePreview();return}
- var q=S.searchTerm.trim();
- if(S.catalog!=='library'&&q.length<2){
-   box.innerHTML='<div class="studio-message">Busca una canción o artista. Por ejemplo:</div><div class="studio-suggest">'
-    +(S.catalog==='popular'?['Shock The World','Bad Bunny','Karol G','The Weeknd','Taylor Swift']:['ambient','electronic','lofi','piano','cinematic']).map(function(t){return '<button type="button" data-studio-suggest="'+fns.esc(t)+'">'+fns.esc(t)+'</button>'}).join('')+'</div>';
-   showApplePreview();return;
- }
- var list=S.results||[];
- if(!list.length){
-  renderSearchMessage(S.catalog==='library'?'No hay canciones guardadas todavía. Puedes subir las tuyas abajo.':S.catalog==='popular'?'No se encontró la grabación en Apple Music; aun así puedes preparar una solicitud de licencia.':S.catalog==='openverse'?'No hay una versión libre de esta canción en Openverse. Si buscas un éxito comercial, consulta «Éxitos y licencias».':'No hay pistas con ese nombre en Audius.');
-  if(S.catalog==='popular'&&q.length>=2)box.insertAdjacentHTML('beforeend','<button type="button" class="studio-action secondary" data-license-query="1">Solicitar permiso para «'+fns.esc(q)+'»</button>');
-  if(S.catalog==='openverse'&&q.length>=2)box.insertAdjacentHTML('beforeend','<button type="button" class="studio-action secondary" id="studio-search-hits">Buscar el éxito en el catálogo comercial</button>');
-  showApplePreview();return;
- }
- if(S.catalog==='popular'){
-   box.innerHTML='<div class="studio-section-count"><span>'+list.length+' canciones encontradas</span><span>Reproductor oficial Apple Music</span></div>'
-   +list.map(function(t,i){
-      var art=imgSrc(t.artwork);
-      var url=safeCatalogLink(t.link);
-      return '<div class="studio-song popular" role="group">'
-       +(art?'<img class="studio-art" loading="lazy" alt="" src="'+fns.esc(art)+'">':'<span class="studio-art" style="display:grid;place-items:center">♫</span>')
-       +'<div class="studio-song-main"><strong class="studio-song-title">'+fns.esc(t.title)+'</strong><span class="studio-song-artist">'+fns.esc(t.artist)+'</span>'
-       +'<span class="studio-song-meta">'+fns.esc(t.album||'')+'</span><span class="studio-song-pill discovery">Solo escuchar · requiere licencia para publicar</span></div>'
-       +'<div class="studio-popular-actions"><button type="button" data-license-hit="'+i+'">¿Usarla en Story?</button><button type="button" data-apple-play="'+i+'">▶ Escuchar</button><button type="button" data-find-cc="'+i+'">Buscar libre</button>'
-       +(url?'<a href="'+fns.esc(url)+'" target="_blank" rel="noopener noreferrer">Apple Music ↗</a>':'')
-       +'</div></div>';
-   }).join('');
-   showApplePreview();return;
- }
- box.innerHTML='<div class="studio-section-count"><span>'+list.length+' pistas</span><span>'+(S.catalog==='openverse'?'Licencia declarada: CC0 / CC BY / PD':'Reproducción disponible')+'</span></div>'
- +list.map(function(t,i){
-   var art=imgSrc(t.artwork);
-   return '<button type="button" class="studio-song'+(S.selected&&t.source===S.selected.source&&t.id===S.selected.id?' selected':'')+'" data-studio-song="'+i+'">'
-   +(art?'<img alt="" loading="lazy" class="studio-art" src="'+fns.esc(art)+'">':'<span class="studio-art" style="display:grid;place-items:center;font-size:22px">♫</span>')
-   +'<span class="studio-song-main"><span class="studio-song-title">'+fns.esc(t.title)+'</span><span class="studio-song-artist">'+fns.esc(t.artist||'Artista')+'</span>'
-   +'<span class="studio-song-pill can-use">'+(S.catalog==='openverse'?'Licencia '+fns.esc(t.license.toUpperCase())+' · verificar':'▶ Reproducción · verificar derechos')+'</span></span>'
-   +'<span class="studio-song-time">'+(t.duration?fns.minutes(t.duration):'♫')+'</span></button>'
- }).join('');
- showApplePreview();
+ if(S.loading){renderSearchMessage('Buscando canciones…');return}
+ var q=S.searchTerm.trim(),list=q.length>=2?(S.results||[]):(S.library||[]).slice(0,12);
+ if(q.length<2){
+  box.innerHTML='<div class="studio-message">¿Qué canción quieres encontrar?</div><div class="studio-suggest">'
+    +['Shock The World','Bad Bunny','Karol G','electronic','piano'].map(function(t){return '<button type="button" data-studio-suggest="'+fns.esc(t)+'">'+fns.esc(t)+'</button>'}).join('')+'</div>'
+    +(list.length?'<div class="studio-section-count">Tus canciones recientes</div>':'');
+ }else if(!list.length){
+  box.innerHTML='<div class="studio-message">No encontramos coincidencias ahora. Prueba otro nombre o artista.</div>'
+  +'<button type="button" class="studio-action secondary" data-license-query="1">Consultar autorización para «'+fns.esc(q)+'»</button>';return;
+ }else box.innerHTML='<div class="studio-section-count">'+list.length+' resultados</div>';
+ box.insertAdjacentHTML('beforeend',list.map(function(t,i){
+  var art=imgSrc(t.artwork);
+  return '<button type="button" class="studio-song studio-unified-song" data-unified-song="'+i+'">'
+   +(art?'<img class="studio-art" loading="lazy" alt="" src="'+fns.esc(art)+'">':'<span class="studio-art" aria-hidden="true" style="display:grid;place-items:center;font-size:21px">♫</span>')
+   +'<span class="studio-song-main"><span class="studio-song-title">'+fns.esc(t.title||'Sin título')+'</span><span class="studio-song-artist">'+fns.esc(t.artist||'Artista')+'</span>'
+   +(t.album?'<span class="studio-song-meta">'+fns.esc(t.album)+'</span>':'')+'</span>'
+   +'<span class="studio-song-time">'+(t.duration?fns.minutes(t.duration):'♫')+'</span></button>';
+ }).join(''));
 }
 function updateResultsFromLibrary(){
  if(!S)return;
@@ -301,6 +269,7 @@ async function loadLibrary(){
  if(out.error){renderSearchMessage('No se pudo leer tu biblioteca: '+out.error.message);return}
  S.library=(out.data||[]).map(function(t){return {source:'library',id:t.id,title:t.title,artist:t.artist||'',path:t.path,duration:Number(t.duration_seconds)||0,artwork:'',link:''}});
  if(S.catalog==='library')updateResultsFromLibrary();
+ if(S.catalog==='all'&&!S.searchTerm.trim())paintResults();
 }
 function safeCatalogLink(s){
  try{var u=new URL(s);if(u.protocol!=='https:')return '';
