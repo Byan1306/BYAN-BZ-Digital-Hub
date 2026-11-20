@@ -94,3 +94,18 @@ Se añadió un panel de música con **cuatro fuentes** al editor de Stories:
 **Uso:** iniciar sesión → Mis Stories → Crear Story → Música → Popular → «▶ Escuchar» para usar el reproductor de Apple Music. Para publicar música libre: cambiar a «✓ Licencia CC», buscar, escuchar, abrir la fuente/licencia y marcar la confirmación. La reproducción efectiva depende de la disponibilidad, permisos y restricciones del servidor que aloja el audio.
 
 **Estado de verificación:** archivos de GitHub y JavaScript revisados; políticas SQL confirman que solo el propietario puede publicar. La reproducción de Apple Music y cada URL de Openverse debe verificarse mediante un navegador conectado.
+
+
+## ▶ YouTube en Stories (video oficial visible)
+
+Nueva fuente YouTube dentro del editor de Stories:
+
+1. **Mis Stories → Crear Story → Música → YouTube**.
+2. Escribe la canción y pulsa **Buscar en YouTube**. Se abre la búsqueda oficial en otra pestaña.
+3. Copia la URL de un video de YouTube (watch, youtu.be, Shorts o live), pégala en el editor y pulsa **Vincular video**.
+4. Selecciona el segundo inicial y la longitud del fragmento (entre 5 y 120 segundos); usa el reproductor oficial para previsualizarlo.
+5. Publica. En la Story aparece un **video de YouTube integrado y visible**, sobre la fotografía, con su identificación de origen y un botón para abrirlo en YouTube. Los visitantes deben pulsar ▶ para escucharlo, porque los navegadores restringen el autoplay.
+
+**Límites importantes**: no se descarga ni extrae solo el audio; no hay reproductores ocultos ni eliminación de la marca de YouTube. Su reproductor debe mantenerse visible y tener al menos 200 × 200 px de viewport. La disponibilidad depende de si el dueño del video permite insertarlo, de derechos regionales y de las políticas de YouTube. La pista musical del video **no se mezcla** como banda sonora invisible con la foto y las letras personalizadas de la Story no pueden sincronizarse automáticamente con el iframe. El modo YouTube admite fragmentos (no canción completa automática). No se requiere una clave de API ni hay costos adicionales de infraestructura para esta modalidad.
+
+Documentación: https://developers.google.com/youtube/player_parameters y https://developers.google.com/youtube/terms/required-minimum-functionality
