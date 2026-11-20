@@ -110,3 +110,17 @@
 .studio-top{top:7px}
 }
 @media(max-height:560px) and (max-width:740px){.studio-left{min-height:150px;padding-top:46px;flex-basis:35%}.studio-right{flex-basis:65%}}
+
+/* Timed lyrics: all content is supplied by the page owner */
+.story-lyrics{position:absolute;top:42%;left:8%;width:84%;transform:translateY(-50%);z-index:3;text-align:center;
+ color:#fff;font-size:clamp(20px,3.5vh,34px);font-weight:850;line-height:1.24;white-space:pre-line;word-break:break-word;
+ pointer-events:none;max-height:42%;overflow:hidden;text-shadow:0 2px 12px #000d;transition:opacity .18s;}
+.story-lyrics:empty{display:none!important}
+.story-lyrics.karaoke{color:#fff;text-shadow:0 0 11px #c06eff,0 3px 17px #08020ee6;letter-spacing:.015em}
+.story-lyrics.clean{font-weight:750;color:#fff;text-shadow:0 2px 8px #000e}
+.story-lyrics.glass{color:#fdf9ff;background:#381c62ad;box-shadow:0 7px 27px #0901149e;
+  backdrop-filter:blur(12px);border:1px solid #c6a5f35c;padding:13px;border-radius:18px}
+.studio-canvas .story-lyrics{font-size:clamp(12px,1.9vw,19px);width:88%;left:6%;max-height:43%}
+.studio-panel #studio-lyrics-lrc{min-height:205px;font-family:ui-monospace,SFMono-Regular,Consolas,monospace;font-size:12px;line-height:1.7}
+.studio-tools .studio-tab{min-width:0;letter-spacing:-.025em}
+@media(max-width:740px){.studio-tools .studio-tab{gap:2px;font-size:10px;padding:8px 2px}.studio-tab-icon{font-size:15px}.story-lyrics{font-size:clamp(20px,5vw,31px)}.studio-canvas .story-lyrics{font-size:14px}}
