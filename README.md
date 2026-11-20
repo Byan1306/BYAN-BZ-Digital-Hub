@@ -49,3 +49,20 @@ on conflict (user_id) do nothing;
 
 ## Seguridad
 Tablas públicas con RLS, permisos de escritura reservados exclusivamente a IDs de `site_admins`. Las fotografías que publiques se verán públicamente. No compartas la clave `service_role` ni claves secretas.
+
+## ✨ Stories estilo Instagram (novedad)
+La sección **Mis Stories** permite publicar fotografías verticales con:
+- 8 filtros visuales (Natural, Cine, Vintage, B&N, Cálido, Frío, Violeta y Dreamy).
+- Texto, color, posición (arriba / centro / abajo) y stickers de emoji.
+- Música en MP3/OGG/WAV/M4A subida por el administrador (solo audio con derechos de publicación).
+- Duración configurable de 5 a 20 segundos, reproducción vertical con barra de progreso y navegación táctil.
+- Stories normales de 24 horas y opción **Destacada** permanente.
+- Edición de textos, filtros y duración, eliminación, y limpieza manual de archivos vencidos.
+
+**Publicar:** inicia sesión en la página → busca **Mis Stories** → **Crear story** → elige foto, música opcional y ajustes → **Publicar story**. Aparece en el sitio sin modificar HTML ni repositorio.
+
+**Almacenamiento:** Supabase `public.stories` y bucket público `byan-stories`; solo `site_admins` puede publicar/editar/borrar. El archivo completo de audio se almacena, aunque suene solo 5–20 segundos. Para ahorrar cuota usa archivos pequeños. Las stories que vencen dejan de aparecer automáticamente pero **sus archivos se conservan hasta usar «Limpiar vencidas»**.
+
+**Derechos de autor:** este editor no se conecta a la biblioteca musical de Instagram ni licencia canciones comerciales. Publica únicamente música original, de uso libre o para la que tengas permisos.
+
+**Verificación:** código y permisos revisados; el flujo de carga de una foto/música real debe probarse en un navegador con la cuenta de administrador.
