@@ -612,9 +612,9 @@ function attachEvents(){
    S.searchTerm=t.value;S.searchArtist='';S.applePreview=null;S.licenseTarget=null;
    updateLicensePanel();showApplePreview();
    if(searchTimer)clearTimeout(searchTimer);
-   if(searchAbort)searchAbort.abort();
+   if(searchAbort){searchAbort.abort();searchAbort=null}
    if(S.searchTerm.trim().length<2){S.results=[];S.loading=false;paintResults()}
-   else searchTimer=setTimeout(searchAllMusic,480);
+   else {S.loading=true;paintResults();searchTimer=setTimeout(searchAllMusic,480)}
    return;
   }
   if(t.id==='studio-start'){S.start=fns.clamp(t.value,0,7200);stopAudio();var label=$('#studio-start-label');if(label)label.textContent=fns.minutes(S.start);return}
