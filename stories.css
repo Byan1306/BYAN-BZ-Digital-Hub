@@ -58,6 +58,7 @@ body:not(.is-admin) #story-new-btn,body:not(.is-admin) #story-clean-btn{display:
 .story-phone .story-photo{object-fit:cover;display:none}
 .story-phone .story-textoverlay{font-size:22px}
 .story-phone .story-emoji{font-size:42px}
+.story-phone-placeholder[hidden]{display:none!important}
 .story-phone-placeholder{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:12px;text-align:center;color:#d8cbef;padding:30px}
 .story-phone-placeholder b{font-size:40px}
 .story-compose-panel{padding:23px 26px;overflow:auto}
