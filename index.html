@@ -27,13 +27,14 @@
  color:#fff;font-size:17px;font-weight:850;
 }
 .tag-icon.brand-logo .tag-logo-image{
- display:none;width:22px;height:22px;max-width:22px;max-height:22px;
- border:0;padding:0;object-fit:contain;
- filter:drop-shadow(0 1px 2px rgba(0,0,0,.24));
+  display:block;width:24px;height:24px;max-width:24px;max-height:24px;
+  border:0;padding:0;object-fit:contain;
+  filter:drop-shadow(0 1px 2px rgba(0,0,0,.24));
 }
-.tag-icon.brand-logo.logo-loaded .tag-logo-image{display:block}
-.tag-icon.brand-logo .tag-fallback{display:grid;place-items:center;width:100%;height:100%}
-.tag-icon.brand-logo.logo-loaded .tag-fallback{display:none}
+.tag-icon.brand-logo .tag-logo-image.mono-logo{
+  filter:brightness(0) invert(1) drop-shadow(0 1px 2px rgba(0,0,0,.22));
+}
+.tag-icon.brand-logo .tag-fallback{display:none;place-items:center;width:100%;height:100%}
 .tag-icon.brand-logo.logo-failed .tag-logo-image{display:none}
 .tag-icon.brand-logo.logo-failed .tag-fallback{display:grid}
 @media(max-width:460px){
@@ -304,32 +305,46 @@ body:not(.is-admin) [data-action="open-editor-photos"],body:not(.is-admin) [data
       try{const u=new URL(String(v||'').trim());return u.protocol==='https:'&&!u.username&&!u.password&&u.href.length<=900?u.href:''}
       catch{return ''}
     }
+    // Iconos alojados junto a la página: no dependen de CDNs externos.
+    const LOCAL_BRAND_LOGOS=new Set('fortnite minecraft steam playstation epicgames discord instagram tiktok github twitch youtube spotify roblox valorant riotgames leagueoflegends pubg counterstrike rockstargames facebook whatsapp telegram reddit netflix crunchyroll applemusic apple googleplay google notion zoom kick snapchat pinterest'.split(' '));
     function gameLogo(g){
       const platform=String(g.platform||'').trim(),brand=platformBrand(platform),custom=imageLogoURL(g.logo);
       const letter=Array.from(platform)[0]?.toUpperCase()||'✦';
       const fallback='<span class="tag-fallback" aria-hidden="true">'+htmlText(letter)+'</span>';
-      const domain=brand?.domain||'';
-      const alternate=domain?'https://www.google.com/s2/favicons?domain='+encodeURIComponent(domain)+'&sz=128':'';
-      const primary=custom||(brand?.icon?'https://cdn.simpleicons.org/'+brand.icon+'/ffffff':alternate);
+      const slug=brand?.icon||'',domain=brand?.domain||'';
+      const local=LOCAL_BRAND_LOGOS.has(slug)?'./assets/logos/'+slug+'.svg':'';
+      const choices=[
+        custom?{url:custom,mono:false}:null,
+        local?{url:local,mono:slug!=='minecraft'}:null,
+        slug?{url:'https://cdn.simpleicons.org/'+slug+'/ffffff',mono:false}:null,
+        domain?{url:'https://www.google.com/s2/favicons?domain='+encodeURIComponent(domain)+'&sz=128',mono:false}:null
+      ].filter(Boolean);
       const background=brand?.bg||'#27213d';
       const safeBg=/^#[0-9a-fA-F]{6}$/.test(background)?background:'#27213d';
-      if(!primary)return '<span class="tag-icon brand-logo logo-failed" style="--brand-bg:'+safeBg+'" title="'+htmlText(platform)+'">'+fallback+'</span>';
+      if(!choices.length)return '<span class="tag-icon brand-logo logo-failed" style="--brand-bg:'+safeBg+'" title="'+htmlText(platform)+'">'+fallback+'</span>';
+      const first=choices[0];
       return '<span class="tag-icon brand-logo" style="--brand-bg:'+safeBg+'" title="'+htmlText(platform)+'">'
-        +'<img class="tag-logo-image" loading="lazy" decoding="async" width="24" height="24" alt=""'
-        +' src="'+escapeHTML(primary)+'"'
-        +(alternate&&alternate!==primary?' data-fallback-src="'+escapeHTML(alternate)+'"':'')+'>'
+        +'<img class="tag-logo-image'+(first.mono?' mono-logo':'')+'" loading="eager" decoding="async" width="24" height="24" alt=""'
+        +' src="'+escapeHTML(first.url)+'"'
+        +' data-logo-sources="'+encodeURIComponent(JSON.stringify(choices))+'" data-logo-position="0">'
         +fallback+'</span>';
     }
-    // Los CDNs o íconos remotos pueden fallar: mostrar inicial sin romper la tarjeta.
-    document.addEventListener('load',e=>{
-      if(e.target?.classList?.contains('tag-logo-image'))e.target.parentElement?.classList.add('logo-loaded');
-    },true);
+    // Si falla un origen, intentar el siguiente; la inicial es el último recurso.
     document.addEventListener('error',e=>{
       const img=e.target;
       if(!img?.classList?.contains('tag-logo-image'))return;
-      const other=img.dataset.fallbackSrc;
-      if(other&&!img.dataset.triedFallback){img.dataset.triedFallback='1';img.src=other;return}
-      img.parentElement?.classList.add('logo-failed');img.remove();
+      let choices=[];
+      try{choices=JSON.parse(decodeURIComponent(img.dataset.logoSources||'%5B%5D'))}catch{}
+      const nextIndex=Number(img.dataset.logoPosition||0)+1;
+      const next=choices[nextIndex];
+      if(next?.url){
+        img.dataset.logoPosition=String(nextIndex);
+        img.classList.toggle('mono-logo',!!next.mono);
+        img.src=next.url;
+      }else{
+        img.parentElement?.classList.add('logo-failed');
+        img.remove();
+      }
     },true);
 
     function getGallery(){return data.photos.length?data.photos.map(x=>({src:x.src,name:x.name||'Mi foto',demo:false})):demoImages.map((src,i)=>({src,name:`Vista de ejemplo ${i+1}`,demo:true}))}
